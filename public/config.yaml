@@ -1,0 +1,40 @@
+# Brevet Planner configuration
+#
+# This file is served with the app and read once at application start.
+# Every key is optional – missing keys fall back to built-in defaults.
+
+site:
+  # Public URL of the app. Its path is used as base path when building, so changing
+  # it requires a rebuild. For a custom domain use e.g. https://brevet.example.org –
+  # the build then also emits a CNAME file for GitHub Pages.
+  # The environment variable SITE_URL overrides this value at build time.
+  url: https://ultra-cycling.github.io/brevet-planner
+
+i18n:
+  defaultLanguage: en
+  languages: [en]
+
+map:
+  # OpenStreetMap cycling map (CyclOSM)
+  tileUrl: https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png
+  subdomains: [a, b, c]
+  maxZoom: 20
+  attribution: >-
+    <a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases">CyclOSM</a> |
+    Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors
+
+storage:
+  # Where route plans are stored. Currently supported: localStorage
+  backend: localStorage
+
+planning:
+  # Defaults for new plans – every plan can override them.
+  defaultStartTime: "06:00"
+  # An arrival is marked "tight" when less than this many minutes remain before the control closes.
+  tightBufferMinutes: 75
+  timeModel:
+    # Exchangeable model that estimates the riding time of a segment.
+    id: speed-climb
+    params:
+      speedKmh: 28        # average speed on flat terrain
+      climbRateMh: 700    # vertical metres climbed per hour

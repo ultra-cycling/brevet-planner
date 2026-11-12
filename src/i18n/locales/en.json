@@ -1,0 +1,24 @@
+{
+  "app": {
+    "name": "Brevet Planner",
+    "tagline": "Timetables for long-distance rides"
+  },
+  "header": {
+    "language": "Language",
+    "mainNavigation": "Main navigation"
+  },
+  "languages": {
+    "en": "English"
+  },
+  "emptyState": {
+    "title": "No track yet",
+    "text": "Upload a GPX track to start planning your brevet: mark the checkpoints, estimate riding and rest times and get a timetable with control windows."
+  },
+  "timeModel": {
+    "speedClimb": {
+      "name": "Speed + climb rate",
+      "speed": "Speed",
+      "climbRate": "Climb rate"
+    }
+  }
+}

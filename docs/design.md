@@ -44,6 +44,19 @@ As a long distance cyclist
 I want to store multiple route plans in the app
 So that I can manage more than 1 track and switch between them
 
+### User Story 6 - Provide start time for each event
+
+As a long distance cyclist
+I want to provide a start time for an event
+So that the timetable can be calculated based on this start time
+Changing the start time should update the timetable
+
+## Cross-functional Requirements
+
+- The UI should provide localization. We start with English, further languages should be added later
+- The design should be responsive. Primary device should be desktop browser and tablet. A simple timetable should be
+  renderable on a smartphone
+
 ## Technology
 
 ### Frontend
