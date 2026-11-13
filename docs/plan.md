@@ -23,14 +23,14 @@ stories that aren't built yet are marked *proposed* and are refined at the start
 | 4  | ✅ | [US4 – Ride and rest times](features/us04-ride-and-rest-times.md): speed + climb-rate model, per-segment overrides, rest times, timetable and totals |
 | –  | ✅ | [Planner layout](#layout): plan column scrolling next to a fixed map (cross-cutting, after iteration 4) |
 | 5  | ✅ | [US6 – Start time](features/us06-start-time.md): start date/time, clock times, live recalculation, OK/Tight/Early/Late status |
-| 6  |    | [US5 – Multiple route plans](features/us05-multiple-route-plans.md): persist plans, plan switcher, create/rename/delete |
-| 7  |    | Phone layout – read-only timetable (cross-functional requirement in [design.md](design.md#cross-functional-requirements)) |
-| 8  |    | [US9 – Move checkpoints](features/us09-move-checkpoints.md): drag and drop on map and profile |
-| 9  |    | [US8 – Trackpoint tooltip](features/us08-trackpoint-tooltip.md): distance and expected times when hovering the route |
-| 10 |    | [US7 – Route overlays](features/us07-route-overlays.md): overlay mechanism, road gradient, daylight |
+| 6  |    | Phone layout – read-only timetable (cross-functional requirement in [design.md](design.md#cross-functional-requirements)) |
+| 7  |    | [US9 – Move checkpoints](features/us09-move-checkpoints.md): drag and drop on map and profile |
+| 8  |    | [US8 – Trackpoint tooltip](features/us08-trackpoint-tooltip.md): distance and expected times when hovering the route |
+| 9  |    | [US7 – Route overlays](features/us07-route-overlays.md): overlay mechanism, road gradient, daylight |
+| 10 | Postponed | [US5 – Multiple route plans](features/us05-multiple-route-plans.md): persist plans, plan switcher, create/rename/delete |
 
-US6 comes before US5 so that the plan model is complete (incl. start time) before it is persisted. US9, US8 and US7
-build on the timetable and the start time and follow once plans are stored.
+US5 (storing plans) is postponed: until then the track and the plan are held in memory and are lost when the page
+is reloaded. The storage interface from iteration 0 stays in place for it.
 
 ## UI design
 
@@ -40,7 +40,7 @@ Design canvas (proposals A, B, C and the chosen hybrid): <https://claude.ai/arti
 
 ### Layout
 
-1. **Header** – brand, plan switcher (US5), language selector, *Upload GPX*, *New plan* (US5).
+1. **Header** – brand, language selector, *Upload GPX*; plan switcher and *New plan* follow with US5.
 2. **Plan column (left, scrolls on its own)** – track summary; plan settings (start date & time, clock time / since
    start, tight threshold (US6); time model, speed and climb rate; totals: riding, stops, finish after / at, average
    speeds, smallest buffer); the editable timetable with
@@ -60,7 +60,7 @@ the profile fits the map pane, no page scrolling.
 |---------------------|------------------------------------------------------------------------------------|
 | Desktop (≥ 1200 px) | Plan column (50 % of the width, 640–1040 px) left, map pane right                   |
 | Tablet (≥ 768 px)   | Map pane on top (half the height, fixed), plan column below                         |
-| Phone               | Read-only timetable cards (CP, ETA, window, buffer) with a small map (iteration 7) |
+| Phone               | Read-only timetable cards (CP, ETA, window, buffer) with a small map (iteration 6) |
 
 The timetable adapts to the width of the plan column (CSS container queries), not to the viewport. The *Segment*
 column is always shown:

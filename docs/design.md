@@ -22,17 +22,17 @@ deployment and operation of the app.
 Each user story is described in its own file in [features/](features), with acceptance criteria and the tests that
 verify them. Iterations and architecture: [plan.md](plan.md).
 
-| #   | User story | As a long-distance cyclist I want to … | Status |
-|-----|------------|----------------------------------------|--------|
-| US1 | [Show a track on a map](features/us01-show-track-on-map.md) | upload a track and see it on a map | ✅ Done |
-| US2 | [Mark checkpoints along the track](features/us02-mark-checkpoints.md) | select POIs along the route to identify the checkpoints | ✅ Done |
-| US3 | [Create segments from checkpoints](features/us03-segments.md) | divide the route into segments between the checkpoints | ✅ Done |
-| US4 | [Provide estimated ride times and rest times for segments](features/us04-ride-and-rest-times.md) | provide speed and climb per segment to calculate riding times | ✅ Done |
-| US5 | [Allow storing multiple route plans](features/us05-multiple-route-plans.md) | store several plans and switch between them | Planned |
-| US6 | [Provide start time for each event](features/us06-start-time.md) | calculate the timetable from a start time | ✅ Done |
-| US7 | [Overlay for route in map](features/us07-route-overlays.md) | colour the route by e.g. road gradient or daylight | Planned |
-| US8 | [Show trackpoint tooltip](features/us08-trackpoint-tooltip.md) | see distance and expected times when hovering the route | Planned |
-| US9 | [Move existing checkpoints](features/us09-move-checkpoints.md) | drag checkpoints along the track on the map and the profile | Planned |
+| #   | User story                                                                                       | As a long-distance cyclist I want to …                        | Status  |
+|-----|--------------------------------------------------------------------------------------------------|---------------------------------------------------------------|---------|
+| US1 | [Show a track on a map](features/us01-show-track-on-map.md)                                      | upload a track and see it on a map                            | ✅ Done  |
+| US2 | [Mark checkpoints along the track](features/us02-mark-checkpoints.md)                            | select POIs along the route to identify the checkpoints       | ✅ Done  |
+| US3 | [Create segments from checkpoints](features/us03-segments.md)                                    | divide the route into segments between the checkpoints        | ✅ Done  |
+| US4 | [Provide estimated ride times and rest times for segments](features/us04-ride-and-rest-times.md) | provide speed and climb per segment to calculate riding times | ✅ Done  |
+| US6 | [Provide start time for each event](features/us06-start-time.md)                                 | calculate the timetable from a start time                     | ✅ Done  |
+| US7 | [Overlay for route in map](features/us07-route-overlays.md)                                      | colour the route by e.g. road gradient or daylight            | Planned |
+| US8 | [Show trackpoint tooltip](features/us08-trackpoint-tooltip.md)                                   | see distance and expected times when hovering the route       | Planned |
+| US9 | [Move existing checkpoints](features/us09-move-checkpoints.md)                                   | drag checkpoints along the track on the map and the profile   | Planned |
+| US5 | [Allow storing multiple route plans](features/us05-multiple-route-plans.md)                      | store several plans and switch between them                   | Postponed |
 
 ## Cross-functional Requirements
 
