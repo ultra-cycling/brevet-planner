@@ -1,0 +1,35 @@
+# US6 – Provide start time for each event
+
+| Status | Iteration | Persona |
+|--------|-----------|---------|
+| ✅ Done | [5](../plan.md#iterations) | Long-distance cyclist |
+
+As a long distance cyclist
+I want to provide a start time for an event
+So that the timetable can be calculated based on this start time
+Changing the start time should update the timetable
+
+## Acceptance criteria
+
+| #    | Criterion | Verified by |
+|------|-----------|-------------|
+| 6.1  | The plan has a start date and time; the date is pre-filled with today, the time from `planning.defaultStartTime` (06:00). An invalid start time is rejected with a message. | [Checkpoints.test.tsx](../../src/components/checkpoints/Checkpoints.test.tsx) – *shows the timetable as clock times from the default start time*, *rejects an invalid start time*; [clock.test.ts](../../src/domain/time/clock.test.ts) – *validates dates and normalizes times of day*; [schema.test.ts](../../src/config/schema.test.ts) |
+| 6.2  | Arrival, departure, control windows and the finish are shown as clock times (24 h), with the weekday when the ride spans midnight. Durations (riding time, buffer, totals) stay hours:minutes. | [clock.test.ts](../../src/domain/time/clock.test.ts) – *formats times in 24 h, with the weekday when the ride spans midnight*; [Checkpoints.test.tsx](../../src/components/checkpoints/Checkpoints.test.tsx) – *recalculates the whole timetable when the start changes, with weekdays across midnight*; [start-time.spec.ts](../../e2e/start-time.spec.ts) – *the timetable shows clock times from the start and follows changes of the start* |
+| 6.3  | Changing the start date or time updates the whole timetable immediately. | [Checkpoints.test.tsx](../../src/components/checkpoints/Checkpoints.test.tsx) – *recalculates the whole timetable when the start changes…*; [start-time.spec.ts](../../e2e/start-time.spec.ts) – *the timetable shows clock times from the start and follows changes of the start* |
+| 6.4  | Every arrival (not the start) has a status shown as text, icon and colour: **OK** (buffer ≥ tight threshold), **Tight** (0 ≤ buffer < threshold), **Early** (arrival before the control opens), **Late** (arrival after it closes; the row is marked as well). | [status.test.ts](../../src/domain/status.test.ts); [Checkpoints.test.tsx](../../src/components/checkpoints/Checkpoints.test.tsx) – *marks each arrival as OK, Tight, Early or Late – with text, not only colour*; [start-time.spec.ts](../../e2e/start-time.spec.ts) – *every arrival has a status as text, and the tight threshold can be changed* |
+| 6.5  | The tight threshold defaults to `planning.tightBufferMinutes` (75 min) and can be changed per plan. | [Checkpoints.test.tsx](../../src/components/checkpoints/Checkpoints.test.tsx) – *marks each arrival as OK, Tight, Early or Late…*; [start-time.spec.ts](../../e2e/start-time.spec.ts); [schema.test.ts](../../src/config/schema.test.ts) |
+| 6.6  | Times can be shown as *Clock time* (default) or *Since start* (hours:minutes after the start, like the control rules); the finish is always also shown as clock time. | [Checkpoints.test.tsx](../../src/components/checkpoints/Checkpoints.test.tsx) – *switches between clock times and times since the start* |
+| 6.7  | Control windows are entered in the selected display: a clock time without weekday is taken on the day closest to the current value, with weekday (e.g. *Sun 09:00*) on that day; times before the start are rejected. | [clock.test.ts](../../src/domain/time/clock.test.ts) – *parses a time of day on the day closest to the reference*, *parses a time with a weekday*; [Checkpoints.test.tsx](../../src/components/checkpoints/Checkpoints.test.tsx) – *enters control windows as clock times, with or without weekday* |
+| 6.8  | Times with weekday still fit the plan column without horizontal scrolling. | [start-time.spec.ts](../../e2e/start-time.spec.ts) – *the timetable shows clock times from the start and follows changes of the start* |
+
+## Implementation notes
+
+- Clock times: `src/domain/time/clock.ts`. The start is a wall-clock date and time at the start location; times are
+  start + minutes, computed in UTC so the browser's time zone and daylight saving changes during the ride don't shift
+  them (a ride across a DST change shows the start's wall clock).
+- Status: `src/domain/status.ts`, computed on whole minutes like the displayed times; arriving exactly at the closing
+  time is *Tight*, not *Late*.
+- The timetable domain stays in minutes after the start; clock times are only a display
+  (`src/components/timetable/useTimeFormat.ts`).
+- With weekdays the *Depart* column is hidden below a plan column width of 900 px (instead of 780 px).
+- Start, threshold and display are held in memory until plans are persisted ([US5](us05-multiple-route-plans.md)).

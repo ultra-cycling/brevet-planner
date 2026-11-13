@@ -2,8 +2,9 @@
 
 Repository contains a planning app for long-distance cycling route planning.
 
-- Requirements: [docs/design.md](docs/design.md)
-- Architecture, UI decisions and iteration plan: [docs/plan.md](docs/plan.md)
+- Requirements and user stories (overview): [docs/design.md](docs/design.md)
+- User stories with acceptance criteria and their tests: [docs/features/](docs/features)
+- Iterations, UI decisions, architecture and configuration: [docs/plan.md](docs/plan.md)
 
 ## Developer setup
 

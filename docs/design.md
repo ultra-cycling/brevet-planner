@@ -19,66 +19,20 @@ deployment and operation of the app.
 
 ## User Stories
 
-### User Story 1 - Show a track on a map
+Each user story is described in its own file in [features/](features), with acceptance criteria and the tests that
+verify them. Iterations and architecture: [plan.md](plan.md).
 
-As a long-distance cyclist
-I want to upload a track to the application
-So that I can see it on a map in the browser
-
-### User Story 2 - Mark Checkpoints along the track
-
-As a long-distance cyclist
-I want to select POIs along the route
-So that I can identify the checkpoints along the track
-
-### User Story 3 - Create segments from Checkpoints
-
-As a long-distance cyclist
-I want to create segments of the route from the checkpoints marked along the route
-So that I can divide the route into multiple segments
-
-### User Story 4 - Provide estimated ride times and rest times for segments
-
-As a long-distance cyclist
-I want to provide an estimated average speed and vertical climb per segment
-So that I can calculate estimated riding time per segment
-
-### User Story 5 - Allow storing multiple route plans
-
-As a long distance cyclist
-I want to store multiple route plans in the app
-So that I can manage more than 1 track and switch between them
-
-### User Story 6 - Provide start time for each event
-
-As a long distance cyclist
-I want to provide a start time for an event
-So that the timetable can be calculated based on this start time
-Changing the start time should update the timetable
-
-### User Story 7 - Overlay for route in map
-
-As a long distance cyclist
-I want to overlay the route track on the map with an color gradient overlay
-So that I can highlight e.g.
-- road gradient
-- daytime / nighttime during expected time of riding
-
-Therefore, provide an extendible overlay-mechnism that allows for further overlays later on.
-
-### User Story 8 - Show Trackpoint Tooltip
-
-As a long distance cyclist
-I want to render a tooltip menu that shows whenever I hover the route track in the map
-So that I can show distance, ride time and estimated time of being at that point along the route
-For that feature, use the extrapolated times from the timetable
-
-### User Story 9 - Move existing trackpoints
-
-As a long distance cyclist
-I want to move existing tooltips along the track
-So that I can re-position them after initial creation
-Therefore allow dragging-and-dropping the checkpoints both on the track in the map and in the elevation profile
+| #   | User story | As a long-distance cyclist I want to … | Status |
+|-----|------------|----------------------------------------|--------|
+| US1 | [Show a track on a map](features/us01-show-track-on-map.md) | upload a track and see it on a map | ✅ Done |
+| US2 | [Mark checkpoints along the track](features/us02-mark-checkpoints.md) | select POIs along the route to identify the checkpoints | ✅ Done |
+| US3 | [Create segments from checkpoints](features/us03-segments.md) | divide the route into segments between the checkpoints | ✅ Done |
+| US4 | [Provide estimated ride times and rest times for segments](features/us04-ride-and-rest-times.md) | provide speed and climb per segment to calculate riding times | ✅ Done |
+| US5 | [Allow storing multiple route plans](features/us05-multiple-route-plans.md) | store several plans and switch between them | Planned |
+| US6 | [Provide start time for each event](features/us06-start-time.md) | calculate the timetable from a start time | Planned |
+| US7 | [Overlay for route in map](features/us07-route-overlays.md) | colour the route by e.g. road gradient or daylight | Planned |
+| US8 | [Show trackpoint tooltip](features/us08-trackpoint-tooltip.md) | see distance and expected times when hovering the route | Planned |
+| US9 | [Move existing checkpoints](features/us09-move-checkpoints.md) | drag checkpoints along the track on the map and the profile | Planned |
 
 ## Cross-functional Requirements
 
