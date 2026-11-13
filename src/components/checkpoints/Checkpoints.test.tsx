@@ -562,3 +562,19 @@ describe('Phone view (iteration 7)', () => {
     expect(screen.getAllByTestId('checkpoint-row')).toHaveLength(3);
   });
 });
+
+describe('Console', () => {
+  it('renders the planner without React or react-bootstrap warnings', async () => {
+    const errors = vi.spyOn(console, 'error');
+    const warnings = vi.spyOn(console, 'warn');
+    try {
+      await renderWithTrack({ times: 'clock' });
+      await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '100{Enter}');
+      const messages = [...errors.mock.calls, ...warnings.mock.calls].map((args) => args.map(String).join(' '));
+      expect(messages).toEqual([]);
+    } finally {
+      errors.mockRestore();
+      warnings.mockRestore();
+    }
+  });
+});

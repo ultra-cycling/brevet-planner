@@ -89,7 +89,6 @@ export function PlanSettingsBar({
         <Form.Group controlId="start-time" className="plan-time">
           <Form.Label className="small text-body-secondary mb-1">{t('timetable.settings.startTime')}</Form.Label>
           <CommitInput
-            id="start-time"
             size="sm"
             inputMode="numeric"
             className="tabular-nums"
@@ -134,7 +133,6 @@ export function PlanSettingsBar({
         <Form.Group controlId="tight-buffer" className="plan-param">
           <Form.Label className="small text-body-secondary mb-1">{t('timetable.settings.tightBuffer')}</Form.Label>
           <CommitInput
-            id="tight-buffer"
             size="sm"
             inputMode="numeric"
             className="tabular-nums"
@@ -167,7 +165,6 @@ export function PlanSettingsBar({
               {t('timetable.settings.paramLabel', { param: t(def.labelKey), unit: def.unit })}
             </Form.Label>
             <CommitInput
-              id={`plan-param-${def.key}`}
               size="sm"
               inputMode="decimal"
               className="tabular-nums"
