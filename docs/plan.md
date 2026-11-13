@@ -8,15 +8,19 @@ and the plan for implementing the user stories iteratively.
 Design canvas (proposals A, B, C and the chosen hybrid):
 <https://claude.ai/artifact/CgwLYJLoNvm7oaKe827MXE>
 
-**Chosen direction: A+B hybrid** – one planning screen, top to bottom:
+**Chosen direction: A+B hybrid**, arranged like a map application (layout changed after iteration 4):
 
 1. **Header** – brand, plan switcher, language selector, *Upload GPX*, *New plan*.
-2. **Plan settings bar** – start date & time (US6), time model, default speed (km/h) and climb rate (m/h), totals
-   (riding + rest time, finish ETA, smallest buffer).
-3. **Map + elevation profile** – CyclOSM map with the track and checkpoint markers; elevation profile directly below.
-   Checkpoints can be placed by clicking the map (snaps to track) or the profile.
-4. **Editable timetable** – one row per checkpoint: km, segment distance/climb, speed, climb rate, ride time, ETA,
-   control window (ACP, editable), rest, departure, buffer status.
+2. **Plan column (left, scrolls on its own)** – track summary; plan settings (start date & time (US6), time model,
+   default speed and climb rate, totals: riding + stops, finish, average speeds, smallest buffer); the editable
+   timetable with one row per checkpoint: name, km, segment (distance, ↑climb ↓descent), pace (speed, climb rate),
+   ride time, arrival, control window (ACP, editable), rest, departure, buffer status.
+3. **Map pane (right, fixed)** – CyclOSM map with the track and checkpoint markers filling the remaining space,
+   elevation profile with the segment strip docked below it. Checkpoints can be placed by clicking the map (snaps to
+   track) or the profile; clicking a marker scrolls the plan column to the checkpoint.
+
+The page itself never scrolls once a track is loaded – only the plan column does, so the map stays in view while
+working through the timetable.
 
 Status of a checkpoint arrival (text + icon + color, never color alone):
 
@@ -29,11 +33,21 @@ Status of a checkpoint arrival (text + icon + color, never color alone):
 
 Responsive behaviour:
 
-| Device              | Behaviour                                                                     |
-|---------------------|-------------------------------------------------------------------------------|
-| Desktop (≥ 1200 px) | Full layout, all timetable columns                                            |
-| Tablet (≥ 768 px)   | Settings bar wraps, smaller map, *Segment*/*Climb* and *Depart* columns hidden, control window stacked |
-| Phone               | Read-only timetable cards (CP, ETA, window, buffer) with a small map           |
+| Device              | Behaviour                                                                                      |
+|---------------------|------------------------------------------------------------------------------------------------|
+| Desktop (≥ 1200 px) | Plan column (50 % of the width, 640–1040 px) left, map pane right                               |
+| Tablet (≥ 768 px)   | Map pane on top (half the height, fixed), plan column below                                      |
+| Phone               | Read-only timetable cards (CP, ETA, window, buffer) with a small map                             |
+
+The timetable adapts to the width of the plan column (CSS container queries), not to the viewport. The *Segment*
+column (distance, below it ↑climb ↓descent) is always shown:
+
+| Plan column width | Timetable                                                                          |
+|-------------------|-------------------------------------------------------------------------------------|
+| ≥ 1000 px         | All columns; speed/climb rate and opening/closing time side by side                  |
+| < 1000 px         | Speed/climb rate and opening/closing time stacked in their cell                      |
+| < 780 px          | *Depart* hidden                                                                      |
+| < 760 px          | *Ride* hidden (riding time in the segment strip's tooltip)                           |
 
 Visual language: white panels on a light neutral ground, orange route (`#C2410C`), blue checkpoint markers
 (`#1D4ED8`), Inter for text with tabular numbers, Space Grotesk for headings – implemented as a Bootstrap theme

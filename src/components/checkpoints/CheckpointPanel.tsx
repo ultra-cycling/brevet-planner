@@ -110,10 +110,10 @@ export function CheckpointPanel({
 
   const paramCell = ({ control }: TimetableRow, def: EstimatorParamDef, label: string) => {
     const cp = control.checkpoint;
-    if (cp.kind === 'start') return <td key={def.key} />;
+    if (cp.kind === 'start') return null;
     const override = cp.segmentParams[def.key];
     return (
-      <td key={def.key} className={override !== undefined ? 'is-overridden' : undefined}>
+      <div key={def.key} className={override !== undefined ? 'is-overridden' : undefined}>
         <CommitInput
           id={`cp-${cp.id}-${def.key}`}
           size="sm"
@@ -140,7 +140,7 @@ export function CheckpointPanel({
             return null;
           }}
         />
-      </td>
+      </div>
     );
   };
 
@@ -170,8 +170,8 @@ export function CheckpointPanel({
   const duration = (minutes: number | null) => (minutes === null ? '' : formatElapsed(minutes));
 
   return (
-    <section className="card" aria-labelledby="checkpoints-heading">
-      <div className="card-body d-flex flex-column gap-3">
+    <section className="checkpoint-panel bg-white" aria-labelledby="checkpoints-heading">
+      <div className="px-3 py-3 d-flex flex-column gap-3">
         <div className="d-flex flex-wrap align-items-end gap-3">
           <div className="me-auto">
             <h2 id="checkpoints-heading" className="h5 mb-1">
@@ -214,22 +214,23 @@ export function CheckpointPanel({
             <thead>
               <tr>
                 <th scope="col">{t('checkpoints.columns.control')}</th>
-                <th scope="col">{t('checkpoints.columns.name')}</th>
                 <th scope="col" className="text-end">
                   {t('checkpoints.columns.km')}
                 </th>
                 <th scope="col" className="segment-col text-end">
                   {t('checkpoints.columns.segment')}
                 </th>
-                <th scope="col" className="segment-col text-end pe-4">
-                  {t('checkpoints.columns.climb')}
-                </th>
-                {estimator.params.map((def) => (
-                  <th key={def.key} scope="col" className="text-end">
-                    {t(def.labelKey)} <span className="fw-normal text-body-secondary">{def.unit}</span>
-                  </th>
-                ))}
                 <th scope="col" className="text-end">
+                  {/* one column for all parameters of the time model: side by side or stacked like the inputs */}
+                  <div className="pace-cell">
+                    {estimator.params.map((def) => (
+                      <span key={def.key}>
+                        {t(def.labelKey)} <span className="fw-normal text-body-secondary">{def.unit}</span>
+                      </span>
+                    ))}
+                  </div>
+                </th>
+                <th scope="col" className="ride-col text-end">
                   {t('timetable.columns.ride')}
                 </th>
                 <th scope="col" className="text-end">
@@ -269,26 +270,30 @@ export function CheckpointPanel({
                     onMouseEnter={segment ? () => onActiveSegmentChange(segment.index) : undefined}
                     onMouseLeave={segment ? () => onActiveSegmentChange(null) : undefined}
                   >
-                    <th scope="row" className="text-nowrap">
-                      {cp.kind === 'control' ? <span className="checkpoint-badge">{row.number}</span> : null}{' '}
-                      {cp.kind === 'control' ? t('checkpoints.cp', { number: row.number }) : t(`checkpoints.${cp.kind}`)}
-                    </th>
-                    <td className="name-cell">
+                    <th scope="row" className="name-cell">
                       {cp.kind === 'control' ? (
-                        <CommitInput
-                          id={`cp-${cp.id}-name`}
-                          size="sm"
-                          aria-label={t('checkpoints.nameLabel', { control: label })}
-                          placeholder={t('checkpoints.namePlaceholder')}
-                          title={cp.name || undefined}
-                          value={cp.name}
-                          onCommit={(text) => {
-                            dispatch({ type: 'rename', id: cp.id, name: text.trim() });
-                            return null;
-                          }}
-                        />
-                      ) : null}
-                    </td>
+                        <div className="d-flex align-items-center gap-2">
+                          <span className="checkpoint-badge" aria-hidden="true">
+                            {row.number}
+                          </span>
+                          <span className="control-label visually-hidden">{t('checkpoints.cp', { number: row.number })}</span>
+                          <CommitInput
+                            id={`cp-${cp.id}-name`}
+                            size="sm"
+                            aria-label={t('checkpoints.nameLabel', { control: label })}
+                            placeholder={t('checkpoints.namePlaceholder')}
+                            title={cp.name || undefined}
+                            value={cp.name}
+                            onCommit={(text) => {
+                              dispatch({ type: 'rename', id: cp.id, name: text.trim() });
+                              return null;
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <span className="control-label">{t(`checkpoints.${cp.kind}`)}</span>
+                      )}
+                    </th>
                     <td className="text-end tabular-nums">
                       {cp.kind === 'control' ? (
                         <CommitInput
@@ -310,14 +315,35 @@ export function CheckpointPanel({
                         format.km(cp.distanceKm).replace(/\s*km$/, '')
                       )}
                     </td>
-                    <td className="segment-col text-end tabular-nums" data-testid="segment-distance">
-                      {segment ? format.km(segment.distanceKm).replace(/\s*km$/, '') : ''}
+                    <td className="segment-col text-end tabular-nums text-nowrap">
+                      {segment && (
+                        <>
+                          <div data-testid="segment-distance">{format.km(segment.distanceKm)}</div>
+                          <div
+                            className="segment-elevation small text-body-secondary"
+                            data-testid="segment-climb"
+                            title={t('checkpoints.segmentElevation', {
+                              climb: format.m(segment.climbM),
+                              descent: format.m(segment.descentM),
+                            })}
+                          >
+                            <span className="visually-hidden">
+                              {t('checkpoints.segmentElevation', {
+                                climb: format.m(segment.climbM),
+                                descent: format.m(segment.descentM),
+                              })}
+                            </span>
+                            <span aria-hidden="true">
+                              ↑{format.int(segment.climbM)} ↓{format.int(segment.descentM)} m
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </td>
-                    <td className="segment-col text-end tabular-nums text-nowrap pe-4" data-testid="segment-climb">
-                      {segment ? format.m(segment.climbM) : ''}
+                    <td>
+                      <div className="pace-cell">{estimator.params.map((def) => paramCell(entry, def, label))}</div>
                     </td>
-                    {estimator.params.map((def) => paramCell(entry, def, label))}
-                    <td className="text-end tabular-nums" data-testid="ride-time">
+                    <td className="ride-col text-end tabular-nums" data-testid="ride-time">
                       {duration(entry.rideMin)}
                     </td>
                     <td className="text-end tabular-nums fw-semibold" data-testid="arrival">

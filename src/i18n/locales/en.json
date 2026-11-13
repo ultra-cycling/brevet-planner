@@ -69,8 +69,7 @@
       "opens": "Opens",
       "closes": "Closes",
       "actions": "Actions",
-      "segment": "Segment km",
-      "climb": "Climb",
+      "segment": "Segment",
       "window": "Control window"
     },
     "namePlaceholder": "Name (optional)",
@@ -97,7 +96,8 @@
       "duplicates_other": "{{count}} waypoints already had a checkpoint.",
       "tooFar_one": "{{count}} waypoint is more than 1 km from the track and was skipped: {{names}}.",
       "tooFar_other": "{{count}} waypoints are more than 1 km from the track and were skipped: {{names}}."
-    }
+    },
+    "segmentElevation": "climb {{climb}}, descent {{descent}}"
   },
   "controls": {
     "rules": {
@@ -109,7 +109,7 @@
   },
   "segments": {
     "label": "Segments",
-    "description": "{{name}}: {{distance}}, climb {{climb}}, descent {{descent}}"
+    "description": "{{name}}: {{distance}}, climb {{climb}}, descent {{descent}}, riding time {{ride}}"
   },
   "timetable": {
     "title": "Checkpoints & timetable",

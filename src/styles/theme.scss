@@ -40,6 +40,11 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
   font-family: $headings-font-family;
 }
 
+// Flex children that may shrink below their content width (Bootstrap has no utility for this)
+.min-w-0 {
+  min-width: 0 !important;
+}
+
 // Columns of times and distances line up
 .tabular-nums {
   font-variant-numeric: tabular-nums;
@@ -63,10 +68,72 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
 }
 
 .track-map {
-  height: 420px;
+  height: 420px; // without the planner layout (e.g. isolated component)
+}
 
-  @include media-breakpoint-down(xl) {
-    height: 340px; // tablet
+// ---- Planner layout: plan in a scrolling left column, map fixed on the right ----
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+
+  // with a track the page itself doesn't scroll – only the plan column does
+  &.has-track {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+.planner {
+  --sidebar-width: clamp(640px, 50vw, 1040px);
+
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+}
+
+.planner-sidebar {
+  // the timetable adapts to the width of this column, not of the viewport (container queries below)
+  container: plan / inline-size;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #fff;
+  border-right: 1px solid $line;
+}
+
+.planner-map {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+
+  .track-map {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 12rem;
+  }
+}
+
+// tablet: map and profile on top (fixed), the plan scrolls below
+@include media-breakpoint-down(xl) {
+  .planner {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .planner-map {
+    order: -1;
+    height: 50dvh;
+    border-bottom: 1px solid $line;
+  }
+
+  .planner-sidebar {
+    border-right: 0;
   }
 }
 
@@ -206,19 +273,20 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
 .checkpoint-table {
   caption-side: bottom;
 
-  // headers wrap on tablet so that they aren't wider than the inputs below them
+  // headers wrap in a narrow column so that they aren't wider than the inputs below them
   th {
-    @include media-breakpoint-up(xl) {
+    @container plan (min-width: 1000px) {
       white-space: nowrap;
     }
   }
 
   .name-cell {
-    min-width: 8rem;
+    min-width: 9rem;
+    font-weight: 600;
   }
 
   .km-input {
-    width: 4.5rem;
+    width: 4.25rem;
     margin-left: auto;
   }
 
@@ -299,11 +367,9 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
 }
 
 .checkpoint-table {
-  // tablet: segment details are in the strip below the profile (docs/plan.md → responsive behaviour)
+  // distance on the first line, climb/descent below – narrow enough for every plan column width
   .segment-col {
-    @include media-breakpoint-down(xl) {
-      display: none;
-    }
+    padding-right: 0.5rem;
   }
 
   tr.is-active-segment > * {
@@ -316,16 +382,29 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
 .checkpoint-table {
   .param-input,
   .rest-input {
-    width: 4rem;
+    width: 3.75rem;
     margin-left: auto;
   }
 
-  .window-cell {
+  .window-cell,
+  .pace-cell {
     display: flex;
     gap: 0.25rem;
 
-    @include media-breakpoint-down(xl) {
+    @container plan (max-width: 999.98px) {
       flex-direction: column;
+    }
+  }
+
+  .pace-cell {
+    justify-content: flex-end;
+    align-items: flex-end;
+
+    // header labels: same width as the inputs below them, so the parameters line up
+    > span {
+      width: 3.75rem;
+      text-align: right;
+      white-space: normal; // "Speed" / "km/h" on two lines instead of overlapping the next label
     }
   }
 
@@ -334,11 +413,11 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
     padding-right: 1.1rem;
   }
 
-  @include media-breakpoint-down(xl) {
+  @container plan (max-width: 999.98px) {
     font-size: 0.875rem;
 
     .name-cell {
-      min-width: 6.5rem;
+      min-width: 7rem;
     }
   }
 
@@ -349,7 +428,14 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
   }
 
   .depart-col {
-    @include media-breakpoint-down(xl) {
+    @container plan (max-width: 779.98px) {
+      display: none;
+    }
+  }
+
+  // very narrow plan column: the riding time is in the segment strip (tooltip) instead
+  .ride-col {
+    @container plan (max-width: 759.98px) {
       display: none;
     }
   }

@@ -62,17 +62,21 @@ export function App() {
     () => (track ? buildSegments(track, checkpointState.checkpoints) : []),
     [track, checkpointState.checkpoints],
   );
+  const timetable = useMemo(
+    () => buildTimetable(rows, segments, estimator, timeModel.params),
+    [rows, segments, estimator, timeModel.params],
+  );
   const segmentViews: SegmentView[] = useMemo(() => {
     const shortName = (id: string) => {
       const row = rows.find((r) => r.checkpoint.id === id)!;
       return row.number === null ? t(`checkpoints.${row.checkpoint.kind}`) : t('checkpoints.cp', { number: row.number });
     };
-    return segments.map((segment) => ({ segment, name: `${shortName(segment.from.id)} → ${shortName(segment.to.id)}` }));
-  }, [segments, rows, t]);
-  const timetable = useMemo(
-    () => buildTimetable(rows, segments, estimator, timeModel.params),
-    [rows, segments, estimator, timeModel.params],
-  );
+    return segments.map((segment) => ({
+      segment,
+      name: `${shortName(segment.from.id)} → ${shortName(segment.to.id)}`,
+      rideMin: timetable.rows[segment.index + 1].rideMin ?? 0,
+    }));
+  }, [segments, rows, timetable, t]);
   // a removed checkpoint may leave the highlight pointing past the last segment
   const highlighted = activeSegment !== null ? (segments[activeSegment] ?? null) : null;
   const highlightPath = useMemo(
@@ -111,60 +115,39 @@ export function App() {
         ],
   );
 
+  const errorAlert = error && (
+    <Alert variant="danger" dismissible onClose={clearError} className="mb-0">
+      {t(`upload.errors.${error}`)}
+    </Alert>
+  );
+
   return (
-    <div className="d-flex flex-column min-vh-100">
+    <div className={`app-shell${track ? ' has-track' : ''}`}>
       <AppHeader onGpxFile={(file) => void importFile(file)} busy={busy} />
-      {track && <TrackSummary track={track} />}
-      {track && (
-        <PlanSettingsBar
-          estimator={estimator}
-          params={timeModel.params}
-          onModelChange={(id) =>
-            setTimeModel({ id, params: resolveParams(estimators.get(id), id === config.planning.timeModel.id ? config.planning.timeModel.params : {}) })
-          }
-          onParamChange={(key, value) =>
-            setTimeModel((current) => ({ ...current, params: { ...current.params, [key]: value } as EstimatorParams }))
-          }
-          totals={timetable.totals}
-          tightestLabel={timetable.totals.tightest ? controlLabel(timetable.totals.tightest.control) : null}
-        />
-      )}
-      <Container as="main" fluid className="flex-grow-1 py-3 px-4 d-flex flex-column gap-3">
-        {error && (
-          <Alert variant="danger" dismissible onClose={clearError} className="mb-0">
-            {t(`upload.errors.${error}`)}
-          </Alert>
-        )}
-        {track ? (
-          <>
-            <section className="card overflow-hidden" aria-label={t('map.sectionLabel')}>
-              <TrackMap
-                track={track}
-                highlight={activeIndex !== null ? track.points[activeIndex] : null}
-                checkpoints={mapCheckpoints}
-                onTrackClick={(lat, lon) => addCheckpoint(snapToTrack(track, lat, lon).distanceKm, 'map')}
-                onCheckpointClick={(id) => document.getElementById(`cp-${id}-name`)?.focus()}
-                highlightPath={highlightPath}
-              />
-              <div className="border-top">
-                <ElevationProfile
-                  track={track}
-                  activeIndex={activeIndex}
-                  onActiveIndexChange={setActiveIndex}
-                  checkpoints={mapCheckpoints}
-                  onPick={(km) => addCheckpoint(km, 'profile')}
-                  highlightRange={highlighted}
-                  footer={
-                    <SegmentStrip
-                      segments={segmentViews}
-                      totalKm={track.distanceKm}
-                      activeIndex={highlighted ? highlighted.index : null}
-                      onActiveIndexChange={setActiveSegment}
-                    />
-                  }
-                />
-              </div>
-            </section>
+      {track ? (
+        <main className="planner">
+          {/* left column: the plan – scrolls on its own while the map stays in place */}
+          <div className="planner-sidebar" data-testid="planner-sidebar">
+            {errorAlert && <div className="px-3 pt-3">{errorAlert}</div>}
+            <TrackSummary track={track} />
+            <PlanSettingsBar
+              estimator={estimator}
+              params={timeModel.params}
+              onModelChange={(id) =>
+                setTimeModel({
+                  id,
+                  params: resolveParams(
+                    estimators.get(id),
+                    id === config.planning.timeModel.id ? config.planning.timeModel.params : {},
+                  ),
+                })
+              }
+              onParamChange={(key, value) =>
+                setTimeModel((current) => ({ ...current, params: { ...current.params, [key]: value } as EstimatorParams }))
+              }
+              totals={timetable.totals}
+              tightestLabel={timetable.totals.tightest ? controlLabel(timetable.totals.tightest.control) : null}
+            />
             <CheckpointPanel
               track={track}
               state={checkpointState}
@@ -178,14 +161,46 @@ export function App() {
               activeSegment={highlighted ? highlighted.index : null}
               onActiveSegmentChange={setActiveSegment}
             />
-          </>
-        ) : (
+          </div>
+          {/* right: map and elevation profile, fixed */}
+          <section className="planner-map" aria-label={t('map.sectionLabel')}>
+            <TrackMap
+              track={track}
+              highlight={activeIndex !== null ? track.points[activeIndex] : null}
+              checkpoints={mapCheckpoints}
+              onTrackClick={(lat, lon) => addCheckpoint(snapToTrack(track, lat, lon).distanceKm, 'map')}
+              onCheckpointClick={(id) => document.getElementById(`cp-${id}-name`)?.focus()}
+              highlightPath={highlightPath}
+            />
+            <div className="border-top bg-white">
+              <ElevationProfile
+                track={track}
+                activeIndex={activeIndex}
+                onActiveIndexChange={setActiveIndex}
+                checkpoints={mapCheckpoints}
+                onPick={(km) => addCheckpoint(km, 'profile')}
+                highlightRange={highlighted}
+                footer={
+                  <SegmentStrip
+                    segments={segmentViews}
+                    totalKm={track.distanceKm}
+                    activeIndex={highlighted ? highlighted.index : null}
+                    onActiveIndexChange={setActiveSegment}
+                  />
+                }
+              />
+            </div>
+          </section>
+        </main>
+      ) : (
+        <Container as="main" fluid className="flex-grow-1 py-3 px-4 d-flex flex-column gap-3">
+          {errorAlert}
           <GpxDropZone onFile={(file) => void importFile(file)} busy={busy} />
-        )}
-        <div className="visually-hidden" role="status" aria-live="polite" data-testid="announcement">
-          {announcement}
-        </div>
-      </Container>
+        </Container>
+      )}
+      <div className="visually-hidden" role="status" aria-live="polite" data-testid="announcement">
+        {announcement}
+      </div>
     </div>
   );
 }

@@ -45,9 +45,9 @@ async function renderWithTrack() {
 function table() {
   const text = (cell: Element | null) => cell?.querySelector('input')?.value ?? cell?.textContent!.trim() ?? '';
   return screen.getAllByTestId('checkpoint-row').map((row) => [
-    text(row.querySelector('th')),
-    text(row.querySelector('.name-cell')),
-    text(row.querySelector('td:nth-child(3)')),
+    row.querySelector('.control-label')!.textContent!.trim(),
+    (row.querySelector('.name-cell input') as HTMLInputElement | null)?.value ?? '',
+    text(row.querySelector('td:nth-child(2)')),
     (row.querySelector('input[id$="-open"]') as HTMLInputElement).value,
     (row.querySelector('input[id$="-close"]') as HTMLInputElement).value,
   ]);
@@ -67,7 +67,7 @@ describe('Checkpoints (US2)', () => {
     await renderWithTrack();
     await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '120{Enter}');
 
-    expect(table()[1]).toEqual(['1 CP1', '', '120.0', '3:32', '8:00']);
+    expect(table()[1]).toEqual(['CP1', '', '120.0', '3:32', '8:00']);
     expect(screen.getByTestId('announcement')).toHaveTextContent('CP1 added at 120.0 km');
     expect(screen.getByTestId('map-checkpoint')).toHaveTextContent('CP1 · 120.0 km');
     expect(screen.getByTestId('profile-checkpoint')).toHaveTextContent('1');
@@ -87,7 +87,7 @@ describe('Checkpoints (US2)', () => {
   it('adds a checkpoint where the track is clicked, but not twice at the same place', async () => {
     await renderWithTrack();
     await userEvent.click(screen.getByRole('button', { name: 'click track at km 30' }));
-    expect(table()[1]).toEqual(['1 CP1', '', '30.0', '0:53', '2:30']);
+    expect(table()[1]).toEqual(['CP1', '', '30.0', '0:53', '2:30']);
 
     await userEvent.click(screen.getByRole('button', { name: 'click track at km 30' }));
     expect(table()).toHaveLength(3);
@@ -101,8 +101,8 @@ describe('Checkpoints (US2)', () => {
     expect(screen.getByText(/Added 2 checkpoints.*1 waypoint is more than 1 km from the track and was skipped: Hotel/)).toBeInTheDocument();
     expect(table().map((row) => [row[0], row[1], row[2]])).toEqual([
       ['Start', '', '0.0'],
-      ['1 CP1', 'Café', '50.0'],
-      ['2 CP2', 'Lakeside', '150.0'],
+      ['CP1', 'Café', '50.0'],
+      ['CP2', 'Lakeside', '150.0'],
       ['Finish', '', '210.0'],
     ]);
 
@@ -122,8 +122,8 @@ describe('Checkpoints (US2)', () => {
 
     expect(table().map((row) => row.slice(0, 3))).toEqual([
       ['Start', '', '0.0'],
-      ['1 CP1', '', '90.0'],
-      ['2 CP2', 'Bakery', '100.0'],
+      ['CP1', '', '90.0'],
+      ['CP2', 'Bakery', '100.0'],
       ['Finish', '', '210.0'],
     ]);
   });
@@ -135,7 +135,7 @@ describe('Checkpoints (US2)', () => {
     const closes = screen.getByLabelText('Closing time of CP1, hours after the start');
     await userEvent.clear(closes);
     await userEvent.type(closes, '9h15{Enter}');
-    expect(table()[1]).toEqual(['1 CP1', '', '120.0', '3:32', '9:15']);
+    expect(table()[1]).toEqual(['CP1', '', '120.0', '3:32', '9:15']);
 
     await userEvent.clear(closes);
     await userEvent.type(closes, '2:00{Enter}');
@@ -147,7 +147,7 @@ describe('Checkpoints (US2)', () => {
     await userEvent.keyboard('{Escape}');
 
     await userEvent.click(screen.getByRole('button', { name: 'Use the ACP times for CP1' }));
-    expect(table()[1]).toEqual(['1 CP1', '', '120.0', '3:32', '8:00']);
+    expect(table()[1]).toEqual(['CP1', '', '120.0', '3:32', '8:00']);
     expect(screen.queryByRole('button', { name: /Use the ACP times/ })).not.toBeInTheDocument();
   });
 
@@ -170,26 +170,32 @@ describe('Checkpoints (US2)', () => {
 });
 
 describe('Segments (US3)', () => {
+  /** distance, visible climb/descent and its accessible text per row */
   const segmentColumns = () =>
-    screen.getAllByTestId('checkpoint-row').map((row) => [
-      row.querySelector('[data-testid="segment-distance"]')!.textContent,
-      row.querySelector('[data-testid="segment-climb"]')!.textContent,
-    ]);
+    screen.getAllByTestId('checkpoint-row').map((row) => {
+      const elevation = row.querySelector('[data-testid="segment-climb"]');
+      return [
+        row.querySelector('[data-testid="segment-distance"]')?.textContent ?? '',
+        elevation?.querySelector('[aria-hidden="true"]')!.textContent ?? '',
+        elevation?.querySelector('.visually-hidden')!.textContent ?? '',
+      ];
+    });
 
-  it('shows the segment ending at each control with distance and climb', async () => {
+  it('shows the segment ending at each control with distance, climb and descent', async () => {
     await renderWithTrack();
+    expect(screen.getByRole('columnheader', { name: 'Segment' })).toBeInTheDocument();
     expect(segmentColumns()).toEqual([
-      ['', ''],
-      ['210.0', '210 m'],
+      ['', '', ''],
+      ['210.0 km', '↑210 ↓0 m', 'climb 210 m, descent 0 m'],
     ]);
 
     await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '60{Enter}');
     await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '150{Enter}');
     expect(segmentColumns()).toEqual([
-      ['', ''],
-      ['60.0', '60 m'],
-      ['90.0', '90 m'],
-      ['60.0', '60 m'],
+      ['', '', ''],
+      ['60.0 km', '↑60 ↓0 m', 'climb 60 m, descent 0 m'],
+      ['90.0 km', '↑90 ↓0 m', 'climb 90 m, descent 0 m'],
+      ['60.0 km', '↑60 ↓0 m', 'climb 60 m, descent 0 m'],
     ]);
   });
 
@@ -200,8 +206,8 @@ describe('Segments (US3)', () => {
     const strip = screen.getByRole('list', { name: 'Segments' });
     const chips = screen.getAllByTestId('segment-chip');
     expect(chips.map((chip) => chip.getAttribute('aria-label'))).toEqual([
-      'Start → CP1: 60.0 km, climb 60 m, descent 0 m',
-      'CP1 → Finish: 150.0 km, climb 150 m, descent 0 m',
+      'Start → CP1: 60.0 km, climb 60 m, descent 0 m, riding time 2:14',
+      'CP1 → Finish: 150.0 km, climb 150 m, descent 0 m, riding time 5:34',
     ]);
     expect(parseFloat((chips[0].parentElement as HTMLElement).style.width)).toBeCloseTo((60 / 210) * 100, 0);
     expect(strip).toBeInTheDocument();
@@ -274,7 +280,7 @@ describe('Timetable (US4)', () => {
     expect(speed).toHaveValue('');
     expect(speed).toHaveAttribute('placeholder', '28');
     await userEvent.type(speed, '20{Enter}');
-    expect(speed.closest('td')).toHaveClass('is-overridden');
+    expect(speed.parentElement).toHaveClass('is-overridden');
     expect(cell(2, 'ride-time')).toBe('5:39'); // 110 km at 20 km/h + 110 m at 700 m/h
     expect(cell(1, 'ride-time')).toBe('3:43'); // other segments keep the plan values
 

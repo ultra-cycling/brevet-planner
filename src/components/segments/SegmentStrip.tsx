@@ -1,11 +1,14 @@
 import { useTranslation } from 'react-i18next';
 import type { Segment } from '../../domain/segments';
+import { formatElapsed } from '../../domain/time/duration';
 import { useFormat } from '../../i18n/useFormat';
 
 export interface SegmentView {
   segment: Segment;
   /** "Start → CP1" */
   name: string;
+  /** Estimated riding time of the segment */
+  rideMin: number;
 }
 
 export interface SegmentStripProps {
@@ -25,9 +28,10 @@ export function SegmentStrip({ segments, totalKm, activeIndex, onActiveIndexChan
 
   return (
     <ol className="segment-strip list-unstyled mb-0" aria-label={t('segments.label')} onMouseLeave={() => onActiveIndexChange(null)}>
-      {segments.map(({ segment, name }) => {
+      {segments.map(({ segment, name, rideMin }) => {
         const description = t('segments.description', {
           name,
+          ride: formatElapsed(rideMin),
           distance: format.km(segment.distanceKm),
           climb: format.m(segment.climbM),
           descent: format.m(segment.descentM),

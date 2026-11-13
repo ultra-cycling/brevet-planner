@@ -12,7 +12,7 @@ test.describe('US3 – segments between checkpoints', () => {
   test('the checkpoints divide the track into segments that add up to the whole track', async ({ page }) => {
     const chips = page.getByTestId('segment-chip');
     await expect(chips).toHaveCount(4);
-    await expect(chips.first()).toHaveAccessibleName(/^Start → CP1: \d+\.\d km, climb [\d,]+ m, descent [\d,]+ m$/);
+    await expect(chips.first()).toHaveAccessibleName(/^Start → CP1: \d+\.\d km, climb [\d,]+ m, descent [\d,]+ m, riding time \d+:\d\d$/);
     await expect(chips.last()).toHaveAccessibleName(/^CP3 → Finish: /);
 
     const labels = await chips.evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')!));
@@ -58,13 +58,14 @@ test.describe('US3 – segments between checkpoints', () => {
     await expect(page.getByTestId('segment-chip').nth(1)).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('segment columns are shown in the table on desktop and hidden on tablet', async ({ page }, testInfo) => {
-    const header = page.getByRole('columnheader', { name: 'Segment km' });
-    if (testInfo.project.name === 'tablet') {
-      await expect(header).toBeHidden();
-    } else {
-      await expect(header).toBeVisible();
-      await expect(page.getByTestId('segment-distance').nth(1)).toHaveText(/^\d+\.\d$/);
+  test('the timetable shows distance, climb and descent of every segment', async ({ page }) => {
+    await expect(page.getByRole('columnheader', { name: 'Segment' })).toBeVisible();
+    const distances = page.getByTestId('segment-distance');
+    await expect(distances).toHaveCount(4); // CP1, CP2, CP3, finish
+    for (const distance of await distances.all()) {
+      await expect(distance).toBeVisible();
+      await expect(distance).toHaveText(/^\d+\.\d km$/);
     }
+    await expect(page.getByTestId('segment-climb').first()).toHaveText(/^climb [\d,]+ m, descent [\d,]+ m↑[\d,]+ ↓[\d,]+ m$/);
   });
 });

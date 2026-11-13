@@ -14,8 +14,8 @@ export function TrackSummary({ track }: { track: Track }) {
   ];
 
   return (
-    <section className="plan-bar bg-white border-bottom px-4 py-3" aria-labelledby="track-name">
-      <div className="d-flex flex-wrap align-items-end gap-3 column-gap-5">
+    <section className="plan-bar bg-white border-bottom px-3 py-3" aria-labelledby="track-name">
+      <div className="d-flex flex-wrap align-items-end gap-2 column-gap-4">
         <h1 id="track-name" className="h4 mb-0 me-auto text-break">
           {track.name}
         </h1>
