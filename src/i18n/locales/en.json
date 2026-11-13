@@ -14,6 +14,39 @@
     "title": "No track yet",
     "text": "Upload a GPX track to start planning your brevet: mark the checkpoints, estimate riding and rest times and get a timetable with control windows."
   },
+  "upload": {
+    "button": "Upload GPX",
+    "choose": "Choose GPX file",
+    "dropHint": "…or drop a .gpx file here",
+    "errors": {
+      "notGpxFile": "Please choose a file with the extension .gpx.",
+      "tooLarge": "The file is too large (maximum 50 MB).",
+      "notXml": "The file could not be read – it is not a valid GPX (XML) file.",
+      "notGpx": "The file is XML, but not a GPX file.",
+      "noTrack": "The GPX file contains no track or route with at least two points.",
+      "invalidCoordinates": "The GPX file contains points with invalid coordinates.",
+      "unreadable": "The file could not be read."
+    }
+  },
+  "track": {
+    "distance": "Distance",
+    "climb": "Climb",
+    "descent": "Descent",
+    "maxElevation": "Highest point"
+  },
+  "map": {
+    "label": "Map of the track",
+    "sectionLabel": "Map and elevation profile",
+    "start": "Start",
+    "finish": "Finish",
+    "startFinish": "Start & finish"
+  },
+  "profile": {
+    "label": "Elevation profile",
+    "hint": "Point at the profile to locate a position on the map",
+    "position": "{{km}} · {{ele}}",
+    "noElevation": "This track has no elevation data, so no elevation profile can be shown."
+  },
   "timeModel": {
     "speedClimb": {
       "name": "Speed + climb rate",

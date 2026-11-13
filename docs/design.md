@@ -12,6 +12,11 @@ The main persona is a cyclist riding long-distance races. They want to prepare a
 longer track into shorter sections. Often these sections are defined by checkpoints along the route that the cyclist
 has to pass.
 
+### App Provider
+
+The App Provider is the operator of the application. Their requirements are around configuration,
+deployment and operation of the app.
+
 ## User Stories
 
 ### User Story 1 - Show a track on a map
@@ -50,6 +55,16 @@ As a long distance cyclist
 I want to provide a start time for an event
 So that the timetable can be calculated based on this start time
 Changing the start time should update the timetable
+
+### User Story 7 - Overlay for route in map
+
+As a long distance cyclist
+I want to overlay the route track on the map with an color gradient overlay
+So that I can highlight e.g.
+- road gradient
+- daytime / nighttime during expected time of riding
+
+Therefore, provide an extendible overlay-mechnism that allows for further overlays later on.
 
 ## Cross-functional Requirements
 

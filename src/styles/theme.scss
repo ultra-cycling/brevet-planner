@@ -48,3 +48,96 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
 .empty-state {
   max-width: 40rem;
 }
+
+// ---- Track: map + elevation profile (US1) ----
+
+.drop-zone {
+  border-style: dashed;
+  border-width: 2px;
+  transition: border-color 0.15s, background-color 0.15s;
+
+  &.is-dragging {
+    border-color: $route;
+    background-color: rgba($route, 0.04);
+  }
+}
+
+.track-map {
+  height: 420px;
+
+  @include media-breakpoint-down(xl) {
+    height: 340px; // tablet
+  }
+}
+
+.elevation-profile {
+  --profile-height: 140px;
+
+  @include media-breakpoint-down(xl) {
+    --profile-height: 110px;
+  }
+}
+
+.profile-plot {
+  position: relative;
+  height: var(--profile-height);
+  cursor: crosshair;
+  touch-action: none; // pointer drag scrubs the profile instead of scrolling
+  border-radius: 0.25rem;
+
+  &:focus-visible {
+    outline: 2px solid $checkpoint;
+    outline-offset: 2px;
+  }
+}
+
+.profile-area {
+  fill: #f6dccb;
+}
+
+.profile-line {
+  fill: none;
+  stroke: $route;
+  stroke-width: 2;
+}
+
+.profile-cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 2px solid $ink;
+  pointer-events: none;
+}
+
+.profile-y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: var(--profile-height);
+  text-align: right;
+  white-space: nowrap;
+  min-width: 3.5rem;
+}
+
+.profile-x-axis {
+  position: relative;
+  height: 1.25rem;
+  margin-top: 0.25rem;
+
+  span {
+    position: absolute;
+    transform: translateX(-50%);
+    white-space: nowrap;
+
+    &:first-child {
+      transform: none;
+    }
+
+    &.end {
+      right: 0;
+      transform: none;
+      font-weight: 600;
+    }
+  }
+}

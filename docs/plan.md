@@ -119,11 +119,18 @@ Every iteration is done when its features are covered by unit tests (Vitest + Te
 
 | #  | Scope                                                                                                              |
 |----|--------------------------------------------------------------------------------------------------------------------|
-| 0  | Scaffold (Vite, React, TypeScript, Bootstrap theme), `config.yaml` loading, i18n (en), storage + estimator interfaces, test setup, GitHub workflows (CI, Pages deploy) |
-| 1  | **US1** – upload GPX, parse track, show it on the CyclOSM map, elevation profile                                   |
+| 0 ✅ | Scaffold (Vite, React, TypeScript, Bootstrap theme), `config.yaml` loading, i18n (en), storage + estimator interfaces, test setup, GitHub workflows (CI, Pages deploy) |
+| 1 ✅ | **US1** – upload GPX (button or drag & drop), parse track, show it on the CyclOSM map, elevation profile linked to the map |
 | 2  | **US2** – checkpoints: click on map / profile (snap to track), enter km, import GPX waypoints; ACP windows, editable |
 | 3  | **US3** – segments between checkpoints with distance and climb                                                     |
 | 4  | **US4** – speed + climb-rate estimator, per-segment overrides, rest time per checkpoint, timetable                  |
 | 5  | **US6** – start date/time, live recalculation, status (OK/Tight/Early/Late)                                        |
 | 6  | **US5** – multiple plans, plan switcher, create/rename/delete                                                      |
 | 7  | Phone layout – read-only timetable                                                                                 |
+
+### Notes per iteration
+
+- **1 (US1):** Climb/descent use a 5 m hysteresis to filter elevation noise. GPX waypoints (`<wpt>`) are already parsed
+  and kept as checkpoint candidates for US2. The loaded track is held in memory only – persisting plans is part of US5.
+  Browser tests use the synthetic fixture `e2e/fixtures/sample-loop.gpx` (regenerate with
+  `node tooling/generate-sample-gpx.ts`) and stub map tiles.

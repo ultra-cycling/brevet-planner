@@ -2,8 +2,14 @@ import { Container, Form, Navbar } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { useConfig } from '../app/AppServices';
 import { BikeIcon } from './icons';
+import { GpxFileButton } from './track/GpxFileButton';
 
-export function AppHeader() {
+export interface AppHeaderProps {
+  onGpxFile: (file: File) => void;
+  busy?: boolean;
+}
+
+export function AppHeader({ onGpxFile, busy = false }: AppHeaderProps) {
   const { t, i18n } = useTranslation();
   const { i18n: i18nConfig } = useConfig();
 
@@ -14,20 +20,23 @@ export function AppHeader() {
           <BikeIcon className="text-route" />
           {t('app.name')}
         </Navbar.Brand>
-        <Form.Group controlId="language" className="ms-auto d-flex align-items-center gap-2">
-          <Form.Label visuallyHidden>{t('header.language')}</Form.Label>
-          <Form.Select
-            value={i18n.resolvedLanguage}
-            onChange={(e) => void i18n.changeLanguage(e.target.value)}
-            disabled={i18nConfig.languages.length < 2}
-          >
-            {i18nConfig.languages.map((lng) => (
-              <option key={lng} value={lng}>
-                {t(`languages.${lng}`, { defaultValue: lng })}
-              </option>
-            ))}
-          </Form.Select>
-        </Form.Group>
+        <div className="ms-auto d-flex flex-wrap align-items-center gap-2">
+          <Form.Group controlId="language">
+            <Form.Label visuallyHidden>{t('header.language')}</Form.Label>
+            <Form.Select
+              value={i18n.resolvedLanguage}
+              onChange={(e) => void i18n.changeLanguage(e.target.value)}
+              disabled={i18nConfig.languages.length < 2}
+            >
+              {i18nConfig.languages.map((lng) => (
+                <option key={lng} value={lng}>
+                  {t(`languages.${lng}`, { defaultValue: lng })}
+                </option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+          <GpxFileButton variant="outline-primary" label={t('upload.button')} onFile={onGpxFile} disabled={busy} />
+        </div>
       </Container>
     </Navbar>
   );
