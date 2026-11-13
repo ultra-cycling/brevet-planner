@@ -13,11 +13,19 @@ vi.mock('../track/TrackMap', () => ({
     onTrackClick,
     onCheckpointClick,
     onCheckpointMove,
+    positionInfo,
+    onTrackHover,
     highlightPath,
     overlayLines,
     children,
   }: TrackMapProps) => (
     <div data-testid="track-map" data-highlight-points={highlightPath?.length}>
+      {/* the content of the hover tooltip and of the touch popup at km 105 (US8) */}
+      <button type="button" onClick={() => onTrackHover?.(105)}>
+        hover track at km 105
+      </button>
+      <div data-testid="track-tooltip">{positionInfo?.(105, false)}</div>
+      <div data-testid="track-popup">{positionInfo?.(105, true)}</div>
       {/* simulated drag and drop of a marker: "drop CP1 at km 150" */}
       {onCheckpointMove && (
         <form
@@ -665,5 +673,46 @@ describe('Move checkpoints (US9)', () => {
     await userEvent.clear(km);
     await userEvent.type(km, '100{Enter}');
     expect(km).toHaveAccessibleDescription('Too close to CP2 – checkpoints must be at least 100 m apart.');
+  });
+});
+
+describe('Trackpoint tooltip (US8)', () => {
+  const text = (testId: string, part: string) =>
+    screen.getByTestId(testId).querySelector(`[data-testid="${part}"]`)!.textContent;
+
+  it('describes the hovered point: distance, climb so far, expected time and riding time', async () => {
+    await renderWithTrack({ times: 'clock' });
+    const tooltip = screen.getByTestId('track-tooltip');
+    expect(text('track-tooltip', 'position-distance')).toBe('105.0 km · ↑105 m climbed'); // 1 m per km
+    // 105 km at 28 km/h = 3:45 + 105 m at 700 m/h = 0:09
+    expect(text('track-tooltip', 'position-expected')).toBe('Expected 09:54 (3:54 after the start)');
+    expect(text('track-tooltip', 'position-ride')).toBe('Riding time 3:54');
+    expect(tooltip).toHaveTextContent('Click to add a checkpoint here');
+  });
+
+  it('includes rests at earlier controls in the expected time, not in the riding time', async () => {
+    await renderWithTrack({ times: 'clock' });
+    await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '100{Enter}'); // 15 min rest
+    expect(text('track-tooltip', 'position-expected')).toBe('Expected 10:09 (4:09 after the start)');
+    expect(text('track-tooltip', 'position-ride')).toBe('Riding time 3:54');
+  });
+
+  it('follows the selected time display', async () => {
+    await renderWithTrack(); // since start
+    expect(text('track-tooltip', 'position-expected')).toBe('Expected 3:54 after the start');
+  });
+
+  it('highlights the hovered position on the elevation profile', async () => {
+    await renderWithTrack({ times: 'clock' });
+    expect(screen.queryByTestId('profile-cursor')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'hover track at km 105' }));
+    expect(parseFloat(screen.getByTestId('profile-cursor').style.left)).toBeCloseTo(50, 0);
+    expect(screen.getByTestId('profile-readout')).toHaveTextContent('105.0 km · 405 m');
+  });
+
+  it('has no "click to add" hint in the touch popup', async () => {
+    await renderWithTrack({ times: 'clock' });
+    expect(screen.getByTestId('track-popup')).not.toHaveTextContent('Click to add');
+    expect(text('track-popup', 'position-expected')).toBe('Expected 09:54 (3:54 after the start)');
   });
 });

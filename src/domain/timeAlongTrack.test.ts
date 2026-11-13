@@ -3,7 +3,7 @@ import { checkpointReducer, controlRows, initialCheckpointState } from './checkp
 import { acpControlRules } from './controls/acp';
 import { buildSegments } from './segments';
 import { speedClimbEstimator } from './time/SpeedClimbEstimator';
-import { minutesAlongTrack } from './timeAlongTrack';
+import { minutesAlongTrack, timesAlongTrack, timesAt } from './timeAlongTrack';
 import { buildTimetable } from './timetable';
 import { positionAtDistance } from './track/snap';
 import { buildTrack } from './track/track';
@@ -15,7 +15,7 @@ const track = buildTrack(
   Array.from({ length: 201 }, (_, i) => ({ lat: 45 + i * DEG_PER_KM, lon: 7, ele: i <= 100 ? 100 : 100 + (i - 100) * 7 })),
 );
 
-function minutes(withControl: boolean) {
+function timetableFor(withControl: boolean) {
   let state = initialCheckpointState(track, 200);
   if (withControl) {
     state = checkpointReducer(state, {
@@ -32,8 +32,10 @@ function minutes(withControl: boolean) {
     speedClimbEstimator,
     { speedKmh: 25, climbRateMh: 700 },
   );
-  return minutesAlongTrack(track, timetable, speedClimbEstimator);
+  return timetable;
 }
+
+const minutes = (withControl: boolean) => minutesAlongTrack(track, timetableFor(withControl), speedClimbEstimator);
 
 const near = (value: number, expected: number) => expect(value).toBeCloseTo(expected, 0);
 
@@ -51,5 +53,24 @@ describe('minutesAlongTrack', () => {
     const m = minutes(false);
     for (let i = 1; i < m.length; i++) expect(m[i]).toBeGreaterThanOrEqual(m[i - 1]);
     near(m[200], 540);
+  });
+});
+
+describe('timesAlongTrack (US8)', () => {
+  const times = timesAlongTrack(track, timetableFor(true), speedClimbEstimator);
+
+  it('separates the riding time from the rests', () => {
+    near(times.rideMin[50], 120);
+    near(times.rideMin[101], 240 + 3); // the 30 min rest at km 100 is not riding time
+    near(times.atMin[101], 273);
+    near(times.rideMin[200], 540);
+  });
+
+  it('interpolates between track points', () => {
+    const at = timesAt(track, times, 50.5);
+    near(at.atMin, 121.2); // 50.5 km at 25 km/h
+    near(at.rideMin, 121.2);
+    near(timesAt(track, times, -1).atMin, 0);
+    near(timesAt(track, times, 999).atMin, 570);
   });
 });

@@ -12,7 +12,7 @@ import {
 import { acpControlRules } from '../domain/controls/acp';
 import { buildSegments } from '../domain/segments';
 import { distanceByClass } from '../domain/overlays/RouteOverlay';
-import { minutesAlongTrack } from '../domain/timeAlongTrack';
+import { timesAlongTrack, timesAt } from '../domain/timeAlongTrack';
 import { localDate, type RideStart } from '../domain/time/clock';
 import { browserTimeZone, startInstantUtc } from '../domain/time/timeZone';
 import { resolveParams, type EstimatorParams } from '../domain/time/TimeEstimator';
@@ -32,6 +32,7 @@ import { PHONE_QUERY, useMediaQuery } from './hooks/useMediaQuery';
 import { ElevationProfile } from './track/ElevationProfile';
 import { GpxDropZone } from './track/GpxDropZone';
 import { RouteOverlayPanel } from './track/RouteOverlayPanel';
+import { PositionInfo } from './track/PositionInfo';
 import { TrackMap, type OverlayLine } from './track/TrackMap';
 import { TrackSummary } from './track/TrackSummary';
 import { useGpxImport } from './track/useGpxImport';
@@ -104,12 +105,17 @@ export function App() {
       rideMin: timetable.rows[segment.index + 1].rideMin ?? 0,
     }));
   }, [segments, rows, timetable, t]);
+  // expected times at every track point – for the overlays (US7) and the position tooltip (US8)
+  const trackTimes = useMemo(
+    () => (track ? timesAlongTrack(track, timetable, estimator) : null),
+    [track, timetable, estimator],
+  );
   // route overlay (US7): classes along the track, drawn as one line per run
   const overlayResult = useMemo(() => {
-    if (!track || !overlay) return null;
+    if (!track || !overlay || !trackTimes) return null;
     const runs = overlay.classify({
       track,
-      minutesAt: minutesAlongTrack(track, timetable, estimator),
+      minutesAt: trackTimes.atMin,
       startUtcMs: startInstantUtc(start, timeZone),
     });
     if (!runs) return { lines: null, distances: null };
@@ -121,7 +127,7 @@ export function App() {
       positions: track.points.slice(run.from, run.to + 1).map((p) => [p.lat, p.lon] as [number, number]),
     }));
     return { lines, distances: distanceByClass(track, runs) };
-  }, [track, overlay, timetable, estimator, start, timeZone]);
+  }, [track, overlay, trackTimes, start, timeZone]);
   // a removed checkpoint may leave the highlight pointing past the last segment
   const highlighted = activeSegment !== null ? (segments[activeSegment] ?? null) : null;
   const highlightPath = useMemo(
@@ -276,6 +282,19 @@ export function App() {
               highlight={activeIndex !== null ? track.points[activeIndex] : null}
               checkpoints={mapCheckpoints}
               onTrackClick={isPhone ? undefined : (lat, lon) => addCheckpoint(snapToTrack(track, lat, lon).distanceKm, 'map')}
+              positionInfo={(distanceKm, touch) => {
+                const at = timesAt(track, trackTimes!, distanceKm);
+                // climb so far – same track points (and hysteresis) as the segments and the track summary
+                const climbM = track.minEleM === null ? null : track.points[nearestPointIndex(track.points, distanceKm)].ascentM;
+                return (
+                  <PositionInfo
+                    info={{ distanceKm, climbM, ...at }}
+                    times={isPhone ? clock : times}
+                    hint={!touch && !isPhone ? t('map.addCheckpoint') : undefined}
+                  />
+                );
+              }}
+              onTrackHover={(km) => setActiveIndex(km === null ? null : nearestPointIndex(track.points, km))}
               onCheckpointClick={(id) => document.getElementById(`cp-${id}-name`)?.focus()}
               onCheckpointMove={isPhone ? undefined : onCheckpointDrop}
               onCheckpointDrag={(drag) => {

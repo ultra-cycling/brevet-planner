@@ -48,9 +48,16 @@ test.describe('Phone layout – map, elevation profile and timetable, read-only'
     expect(overflow).toBeLessThanOrEqual(0);
   });
 
-  test('tapping the map or the profile does not add checkpoints', async ({ page }) => {
+  test('tapping the map shows the expected time there but does not add checkpoints', async ({ page }) => {
     const point = await pointOnTrack(page, 0.5);
     await page.touchscreen.tap(point.x, point.y);
+    // US8: the position popup, without "Add checkpoint here"
+    const popup = page.locator('.track-popup');
+    await expect(popup.getByTestId('position-expected')).toHaveText(/^Expected \d\d:\d\d/);
+    await expect(popup.getByRole('button', { name: 'Add checkpoint here' })).toHaveCount(0);
+    await popup.locator('.leaflet-popup-close-button').tap();
+    await expect(popup).toBeHidden();
+
     const profile = (await page.getByRole('slider', { name: 'Elevation profile' }).boundingBox())!;
     await page.touchscreen.tap(profile.x + profile.width / 2, profile.y + profile.height / 2);
     await expect(cards(page)).toHaveCount(2);

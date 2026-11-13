@@ -1,8 +1,9 @@
 import 'leaflet/dist/leaflet.css';
 
 import { divIcon, type DivIcon, type LatLng, type Marker as LeafletMarker } from 'leaflet';
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Button } from 'react-bootstrap';
+import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMap } from 'react-leaflet';
 import { useTranslation } from 'react-i18next';
 import { useConfig } from '../../app/AppServices';
 import { haversineKm } from '../../domain/track/geo';
@@ -57,8 +58,15 @@ export interface TrackMapProps {
   /** Track point to highlight, e.g. while hovering the elevation profile */
   highlight?: TrackPoint | null;
   checkpoints?: readonly MapCheckpoint[];
-  /** Click on (or next to) the track line */
+  /** Click on (or next to) the track line – with a mouse; a tap opens the position popup instead (US8) */
   onTrackClick?: (lat: number, lon: number) => void;
+  /**
+   * Content describing a point of the route (US8): shown in the tooltip while hovering the track and in the popup
+   * after tapping it. `touch`: for the popup (no "click to add" hint).
+   */
+  positionInfo?: (distanceKm: number, touch: boolean) => ReactNode;
+  /** Distance of the hovered point of the track, `null` when the pointer leaves it */
+  onTrackHover?: (distanceKm: number | null) => void;
   onCheckpointClick?: (id: string) => void;
   /**
    * Drag and drop of a checkpoint marker along the track (US9). Called with the snapped distance on drop; return
@@ -182,6 +190,8 @@ export function TrackMap({
   highlight,
   checkpoints = [],
   onTrackClick,
+  positionInfo,
+  onTrackHover,
   onCheckpointClick,
   onCheckpointMove,
   onCheckpointDrag,
@@ -195,6 +205,15 @@ export function TrackMap({
   const start = track.points[0];
   const finish = track.points.at(-1)!;
   const isLoop = haversineKm(start.lat, start.lon, finish.lat, finish.lon) < SAME_PLACE_KM;
+  // point of the track under the mouse (tooltip) and the tapped point (popup)
+  const [hover, setHover] = useState<{ distanceKm: number } | null>(null);
+  const [tapped, setTapped] = useState<{ lat: number; lon: number; distanceKm: number } | null>(null);
+  // touch also fires mouse events: while the popup is open its position stays highlighted
+  const popupOpen = useRef(false);
+  useEffect(() => {
+    popupOpen.current = tapped !== null;
+  }, [tapped]);
+  const snapped = (lat: number, lon: number) => snapToTrack(track, lat, lon);
 
   return (
     <div className="track-map" role="region" aria-label={t('map.label')}>
@@ -221,17 +240,73 @@ export function TrackMap({
             interactive={false}
           />
         )}
-        {onTrackClick && (
+        {(onTrackClick || positionInfo) && (
           // wide transparent line on top: makes the track easy to hit with mouse or finger
           <Polyline
             positions={positions}
             pathOptions={{ color: ROUTE, weight: 22, opacity: 0 }}
             className="track-hit"
             bubblingMouseEvents={false}
-            eventHandlers={{ click: (e) => onTrackClick(e.latlng.lat, e.latlng.lng) }}
+            eventHandlers={{
+              mousemove: (e) => {
+                if (popupOpen.current) return;
+                const { distanceKm } = snapped(e.latlng.lat, e.latlng.lng);
+                setHover({ distanceKm });
+                onTrackHover?.(distanceKm);
+              },
+              mouseout: () => {
+                setHover(null);
+                if (!popupOpen.current) onTrackHover?.(null);
+              },
+              click: (e) => {
+                const pointerType = (e.originalEvent as PointerEvent).pointerType;
+                if (positionInfo && (pointerType === 'touch' || pointerType === 'pen')) {
+                  // touch: show what's there first, adding is a second, deliberate step
+                  const p = snapped(e.latlng.lat, e.latlng.lng);
+                  setHover(null);
+                  popupOpen.current = true;
+                  setTapped({ lat: p.lat, lon: p.lon, distanceKm: p.distanceKm });
+                  onTrackHover?.(p.distanceKm);
+                } else {
+                  onTrackClick?.(e.latlng.lat, e.latlng.lng);
+                }
+              },
+            }}
           >
-            <Tooltip sticky>{t('map.addCheckpoint')}</Tooltip>
+            {!tapped && (
+              <Tooltip sticky className="track-tooltip">
+                {positionInfo && hover ? positionInfo(hover.distanceKm, false) : t('map.addCheckpoint')}
+              </Tooltip>
+            )}
           </Polyline>
+        )}
+        {tapped && positionInfo && (
+          <Popup
+            position={[tapped.lat, tapped.lon]}
+            className="track-popup"
+            eventHandlers={{
+              remove: () => {
+                setTapped(null);
+                onTrackHover?.(null);
+              },
+            }}
+          >
+            {positionInfo(tapped.distanceKm, true)}
+            {onTrackClick && (
+              <Button
+                size="sm"
+                variant="primary"
+                className="mt-2 w-100"
+                onClick={() => {
+                  onTrackClick(tapped.lat, tapped.lon);
+                  setTapped(null);
+                  onTrackHover?.(null);
+                }}
+              >
+                {t('map.addHere')}
+              </Button>
+            )}
+          </Popup>
         )}
         <CircleMarker
           center={[start.lat, start.lon]}

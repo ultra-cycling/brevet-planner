@@ -26,7 +26,7 @@ stories that aren't built yet are marked *proposed* and are refined at the start
 | 6  | ✅         | [US7 – Route overlays](features/us07-route-overlays.md): overlay mechanism, road gradient, daylight (with time zone of the start)                                                                       |
 | 7  | ✅         | [Phone layout](#phone-layout) – read-only timetable cards, small map (cross-functional requirement in [design.md](design.md#cross-functional-requirements))                                             |
 | 8  | ✅         | [US9 – Move checkpoints](features/us09-move-checkpoints.md): drag and drop on map and profile                                                                                                           |
-| 9  |           | [US8 – Trackpoint tooltip](features/us08-trackpoint-tooltip.md): distance and expected times when hovering the route                                                                                    |
+| 9  | ✅         | [US8 – Trackpoint tooltip](features/us08-trackpoint-tooltip.md): distance and expected times when hovering the route                                                                                    |
 | 10 | Postponed | [US5 – Multiple route plans](features/us05-multiple-route-plans.md): persist plans, plan switcher, create/rename/delete                                                                                 |
 
 US5 (storing plans) is postponed: until then the track and the plan are held in memory and are lost when the page

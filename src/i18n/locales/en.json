@@ -40,7 +40,15 @@
     "start": "Start",
     "finish": "Finish",
     "startFinish": "Start & finish",
-    "addCheckpoint": "Click to add a checkpoint here"
+    "addCheckpoint": "Click to add a checkpoint here",
+    "position": {
+      "expectedClock": "Expected {{time}} ({{elapsed}} after the start)",
+      "expectedElapsed": "Expected {{elapsed}} after the start",
+      "ride": "Riding time {{time}}",
+      "distanceClimb": "{{distance}} · ↑{{climb}} climbed"
+    },
+    "addHere": "Add checkpoint here",
+    "close": "Close"
   },
   "profile": {
     "label": "Elevation profile",

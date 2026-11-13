@@ -631,3 +631,21 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
     }
   }
 }
+
+// ---- Trackpoint tooltip (US8) ----
+
+.track-tooltip,
+.track-popup .leaflet-popup-content {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.track-popup .leaflet-popup-content {
+  margin: 0.625rem 0.75rem;
+  min-width: 11rem;
+}
+
+// the wide hit line is not keyboard-focusable; Chrome would outline it after a tap
+path.track-hit:focus {
+  outline: none;
+}

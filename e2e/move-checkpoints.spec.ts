@@ -58,7 +58,7 @@ test.describe('US9 – move checkpoints', () => {
     // dropped a bit beside the line: the checkpoint snaps onto the track
     await drag(page, await center(page, '.checkpoint-marker'), { x: target.x + 6, y: target.y + 6 }, async () => {
       // while dragging, the marker follows on the track (the map may pan) and the profile shows its position
-      expect(await distanceToTrack(page, await center(page, '.checkpoint-marker'))).toBeLessThan(4);
+      expect(await distanceToTrack(page, await center(page, '.checkpoint-marker'))).toBeLessThan(6); // marker 26 px, positions rounded to whole px
       await expect(page.locator('.profile-checkpoint.is-dragging')).toHaveCount(1);
       await expect(page.locator('.leaflet-tooltip:visible')).toHaveCount(0);
     });
@@ -68,9 +68,8 @@ test.describe('US9 – move checkpoints', () => {
     await expect(page.getByLabel('Opening time of CP1, hours after the start')).not.toHaveValue(opensBefore);
     await expect(page.getByTestId('announcement')).toContainText('CP1 moved to');
 
-    // the marker sits on the track line
-    const marker = await center(page, '.checkpoint-marker');
-    expect(Math.hypot(marker.x - target.x, marker.y - target.y)).toBeLessThan(15);
+    // the marker sits on the track line (the map may have panned while dragging)
+    expect(await distanceToTrack(page, await center(page, '.checkpoint-marker'))).toBeLessThan(6); // marker 26 px, positions rounded to whole px
   });
 
   test('Escape while dragging on the map cancels the move', async ({ page }) => {
