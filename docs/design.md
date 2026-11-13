@@ -66,6 +66,13 @@ So that I can highlight e.g.
 
 Therefore, provide an extendible overlay-mechnism that allows for further overlays later on.
 
+### User Story 8 - Show Trackpoint Tooltip
+
+As a long distance cyclist
+I want to render a tooltip menu that shows whenever I hover the route track in the map
+So that I can show distance, ride time and estimated time of being at that point along the route
+For that feature, use the extrapolated times from the timetable
+
 ## Cross-functional Requirements
 
 - The UI should provide localization. We start with English, further languages should be added later

@@ -5,18 +5,59 @@ Repository contains a planning app for long-distance cycling route planning.
 - Requirements: [docs/design.md](docs/design.md)
 - Architecture, UI decisions and iteration plan: [docs/plan.md](docs/plan.md)
 
-## Development
+## Developer setup
 
-Requires Node.js 24 (see `.nvmrc`).
+The CI workflows use **Node.js 26** (major version in [`.nvmrc`](.nvmrc), resolved to the latest 26.x) together with
+the npm version bundled with it. Use the same locally so that `package-lock.json` is written the same way as CI reads
+it. `package.json` declares `"engines": { "node": "^26" }`, so npm warns (`EBADENGINE`) when another major is used.
+
+### Node.js via Homebrew (macOS)
+
+The Homebrew formula `node` currently provides Node 26:
 
 ```sh
-npm install
-npm run dev          # dev server at http://localhost:5173/brevet-planner/
-npm test             # unit tests (Vitest)
-npx playwright install chromium   # once
-npm run test:e2e     # browser tests (Playwright, desktop + tablet viewport) against the production build
-npm run build        # type check + production build into dist/
+brew install node
+node -v   # v26.x
+npm -v    # npm bundled with Node 26
 ```
+
+Keep Node and npm up to date with Homebrew – **don't** run `npm install -g npm@latest`: npm belongs to the Homebrew
+installation and is updated together with Node. With the latest 26.x on both sides, local npm and CI npm are the
+same version.
+
+```sh
+brew update && brew upgrade node
+```
+
+> **When Node 27 is released** (April 2027), the `node` formula will move to 27 while the project stays on 26 until
+> `.nvmrc` is bumped. Then either switch to the versioned formula (`brew uninstall node && brew install node@26`;
+> `node@26` is keg-only, add `$(brew --prefix node@26)/bin` to your `PATH`), or upgrade the project by changing
+> `.nvmrc` and `engines.node` together.
+
+### First-time project setup
+
+```sh
+npm ci                            # install exactly the versions from package-lock.json
+npx playwright install chromium   # browser for the browser tests (again after Playwright updates)
+```
+
+## Local development
+
+```sh
+npm run dev          # dev server with hot reload: http://localhost:5173/brevet-planner/
+npm test             # unit tests (Vitest); npm run test:watch for watch mode
+npm run test:e2e     # browser tests (Playwright, desktop + tablet viewport) against the production build
+npm run typecheck    # TypeScript check
+npm run build        # type check + production build into dist/
+npm run preview      # serve dist/ like GitHub Pages: http://localhost:4173/brevet-planner/
+```
+
+- The app is served under the base path from `site.url` – open `/brevet-planner/`, not `/`. To serve from the root
+  locally: `SITE_URL=http://localhost npm run dev`.
+- `public/config.yaml` is read at application start – reload the page after editing it.
+- Dependencies: use `npm install <package>` (with Node 26's npm, see above) and commit the updated
+  `package-lock.json`. CI runs `npm ci`, which fails if `package.json` and the lockfile are out of sync.
+- The GPX fixture for the browser tests is generated: `node tooling/generate-sample-gpx.ts`.
 
 ## Configuration
 
