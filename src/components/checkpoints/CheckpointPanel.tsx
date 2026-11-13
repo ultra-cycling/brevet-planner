@@ -12,6 +12,7 @@ import type { Track } from '../../domain/track/track';
 import { useFormat } from '../../i18n/useFormat';
 import { RemoveIcon, ResetIcon } from '../icons';
 import { StatusBadge } from '../timetable/StatusBadge';
+import { TimetableCards } from '../timetable/TimetableCards';
 import type { TimeFormat } from '../timetable/useTimeFormat';
 import { CommitInput } from './CommitInput';
 import { useControlLabel } from './useControlLabel';
@@ -219,6 +220,8 @@ export function CheckpointPanel({
           </Alert>
         )}
 
+        {/* phones: read-only cards instead of the table – which one is shown depends on the plan column width */}
+        <TimetableCards timetable={timetable} times={times} tightBufferMin={tightBufferMin} />
         <div className="table-responsive">
           <Table
             size="sm"

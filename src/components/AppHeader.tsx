@@ -15,12 +15,12 @@ export function AppHeader({ onGpxFile, busy = false }: AppHeaderProps) {
 
   return (
     <Navbar as="header" bg="white" className="border-bottom app-header" aria-label={t('header.mainNavigation')}>
-      <Container fluid className="flex-wrap gap-3 px-4">
+      <Container fluid className="flex-nowrap gap-3 px-3 px-sm-4">
         <Navbar.Brand href={import.meta.env.BASE_URL} className="d-flex align-items-center gap-2 fw-bold font-heading">
           <BikeIcon className="text-route" />
           {t('app.name')}
         </Navbar.Brand>
-        <div className="ms-auto d-flex flex-wrap align-items-center gap-2">
+        <div className="ms-auto d-flex align-items-center gap-2">
           <Form.Group controlId="language">
             <Form.Label visuallyHidden>{t('header.language')}</Form.Label>
             <Form.Select

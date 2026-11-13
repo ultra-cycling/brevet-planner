@@ -20,7 +20,9 @@ const PANEL_SPACE_PX = 264;
 function FitToTrack({ track, reservePanel }: { track: Track; reservePanel: boolean }) {
   const map = useMap();
   useEffect(() => {
-    const right = reservePanel ? Math.min(PANEL_SPACE_PX, map.getSize().x * 0.4) : 24;
+    // on phones the panel sits below the map (theme.scss → phone layout)
+    const overlaid = reservePanel && window.matchMedia('(min-width: 768px)').matches;
+    const right = overlaid ? Math.min(PANEL_SPACE_PX, map.getSize().x * 0.4) : 24;
     // without animation: the initial view (MapContainer bounds) differs only by the padding
     map.fitBounds(track.bounds, { paddingTopLeft: [24, 24], paddingBottomRight: [right, 24], animate: false });
   }, [map, track, reservePanel]);

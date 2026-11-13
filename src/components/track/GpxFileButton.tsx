@@ -14,7 +14,9 @@ export function GpxFileButton({ label, onFile, ...buttonProps }: GpxFileButtonPr
     <>
       <Button {...buttonProps} onClick={() => input.current?.click()} className={`d-inline-flex align-items-center gap-2 ${buttonProps.className ?? ''}`}>
         <UploadIcon />
-        {label}
+        {/* phones: icon only – the label stays for screen readers */}
+        <span className="d-none d-sm-inline">{label}</span>
+        <span className="visually-hidden d-sm-none">{label}</span>
       </Button>
       <input
         ref={input}

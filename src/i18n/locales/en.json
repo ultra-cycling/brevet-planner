@@ -173,6 +173,13 @@
       "tightHint": "Little time left until the control closes",
       "earlyHint": "Arrival before the control opens – you have to wait",
       "lateHint": "Arrival after the control closes"
+    },
+    "cards": {
+      "label": "Timetable",
+      "start": "Start",
+      "minutes_one": "{{count}} min",
+      "minutes_other": "{{count}} min",
+      "buffer": "{{time}} left"
     }
   },
   "overlays": {

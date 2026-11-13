@@ -229,7 +229,7 @@ export function App() {
                 noteValues={{ zone: timeZone.replaceAll('_', ' ') }}
               />
             </TrackMap>
-            <div className="border-top bg-white">
+            <div className="planner-profile border-top bg-white">
               <ElevationProfile
                 track={track}
                 activeIndex={activeIndex}

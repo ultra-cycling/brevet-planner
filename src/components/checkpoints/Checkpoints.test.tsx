@@ -497,3 +497,25 @@ describe('Route overlays (US7)', () => {
     expect(lineClasses()).toEqual(['day', 'twilight', 'night']);
   });
 });
+
+describe('Phone timetable (iteration 7)', () => {
+  it('shows a read-only card per control with arrival, status, window and buffer', async () => {
+    await renderWithTrack({ times: 'clock' });
+    await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '100{Enter}');
+    const cards = screen.getAllByTestId('timetable-card');
+    expect(cards.map((card) => card.querySelector('h3')!.textContent)).toEqual(['Start', 'CP1', 'Finish']);
+    expect(cards.every((card) => card.querySelector('input') === null)).toBe(true); // read-only
+
+    const [start, cp1, finish] = cards;
+    expect(start.querySelector('[data-testid="card-arrival"]')).toHaveTextContent('06:00');
+    expect(start.querySelector('[data-testid="status"]')).toBeNull();
+    expect(cp1.querySelector('[data-testid="card-arrival"]')).toHaveTextContent('09:43'); // as in the table
+    expect(cp1).toHaveTextContent('Rest15 min');
+    expect(cp1).toHaveTextContent('Depart09:58');
+    expect(cp1).toHaveTextContent('Segment100.0 km · ↑100 ↓0 m · 3:43');
+    expect(finish.querySelector('[data-testid="card-arrival"]')).toHaveTextContent('14:03');
+    expect(finish.querySelector('[data-testid="status"]')).toHaveTextContent('OK');
+    expect(finish.querySelector('[data-testid="card-buffer"]')).toHaveTextContent('5:27 left');
+    expect(finish).toHaveTextContent('Control window11:53 – 19:30');
+  });
+});

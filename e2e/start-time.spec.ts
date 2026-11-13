@@ -48,7 +48,8 @@ test.describe('US6 – start time', () => {
   test('every arrival has a status as text, and the tight threshold can be changed', async ({ page }) => {
     await expect(rows(page)).toHaveCount(5);
     await expect(rows(page).first().getByTestId('status')).toHaveCount(0); // start
-    const statuses = await page.getByTestId('status').allTextContents();
+    const table = page.locator('.checkpoint-table'); // (the phone cards are hidden on this width)
+    const statuses = await table.getByTestId('status').allTextContents();
     expect(statuses).toHaveLength(4);
     for (const status of statuses) expect(['OK', 'Tight', 'Early', 'Late']).toContain(status);
 
@@ -56,7 +57,7 @@ test.describe('US6 – start time', () => {
     const tight = page.getByLabel('Tight below (min)');
     await tight.fill('1440');
     await tight.press('Enter');
-    await expect(page.getByTestId('status').filter({ hasText: 'OK' })).toHaveCount(0);
+    await expect(table.getByTestId('status').filter({ hasText: 'OK' })).toHaveCount(0);
 
     // a closing time before the arrival → late
     const arrival = await page.getByTestId('arrival').nth(1).textContent();

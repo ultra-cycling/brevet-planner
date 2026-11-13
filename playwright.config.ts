@@ -13,8 +13,22 @@ export default defineConfig({
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: { baseURL, trace: 'on-first-retry' },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
-    { name: 'tablet', use: { ...devices['Desktop Chrome'], viewport: { width: 820, height: 1180 }, hasTouch: true } },
+    {
+      name: 'desktop',
+      testIgnore: /phone\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
+    },
+    {
+      name: 'tablet',
+      testIgnore: /phone\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], viewport: { width: 820, height: 1180 }, hasTouch: true },
+    },
+    // phone: read-only timetable cards (iteration 7) – the editing specs above target desktop and tablet
+    {
+      name: 'phone',
+      testMatch: /(phone|app)\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
+    },
   ],
   webServer: {
     // Tests run against the production build, served like on GitHub Pages
