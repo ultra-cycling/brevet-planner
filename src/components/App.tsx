@@ -10,6 +10,7 @@ import {
 } from '../domain/checkpoints';
 import { acpControlRules } from '../domain/controls/acp';
 import { buildSegments } from '../domain/segments';
+import { localDate, type RideStart } from '../domain/time/clock';
 import { resolveParams, type EstimatorParams } from '../domain/time/TimeEstimator';
 import { buildTimetable } from '../domain/timetable';
 import { positionAtDistance, snapToTrack, trackSlice } from '../domain/track/snap';
@@ -21,6 +22,7 @@ import { useControlLabel } from './checkpoints/useControlLabel';
 import { useAppServices } from '../app/AppServices';
 import { SegmentStrip, type SegmentView } from './segments/SegmentStrip';
 import { PlanSettingsBar } from './timetable/PlanSettingsBar';
+import { useTimeFormat, type TimeDisplay } from './timetable/useTimeFormat';
 import { ElevationProfile } from './track/ElevationProfile';
 import { GpxDropZone } from './track/GpxDropZone';
 import { TrackMap } from './track/TrackMap';
@@ -47,6 +49,10 @@ export function App() {
   });
   const estimator = estimators.get(timeModel.id);
   const defaultRestMin = config.planning.defaultRestMinutes;
+  // start and tight threshold of the plan (US6) – persisted with the plan in US5
+  const [start, setStart] = useState<RideStart>(() => ({ date: localDate(), time: config.planning.defaultStartTime }));
+  const [tightBufferMin, setTightBufferMin] = useState(config.planning.tightBufferMinutes);
+  const [timeDisplay, setTimeDisplay] = useState<TimeDisplay>('clock');
 
   const onTrack = useCallback((next: Track) => {
     setTrack(next);
@@ -66,6 +72,13 @@ export function App() {
     () => buildTimetable(rows, segments, estimator, timeModel.params),
     [rows, segments, estimator, timeModel.params],
   );
+  // latest point in time shown in the timetable – decides whether clock times need the weekday
+  const lastMin = useMemo(
+    () => Math.max(0, ...timetable.rows.map((r) => Math.max(r.arrivalMin, r.control.window.closeMin))),
+    [timetable],
+  );
+  const times = useTimeFormat(start, timeDisplay, lastMin);
+  const clock = useTimeFormat(start, 'clock', lastMin);
   const segmentViews: SegmentView[] = useMemo(() => {
     const shortName = (id: string) => {
       const row = rows.find((r) => r.checkpoint.id === id)!;
@@ -131,6 +144,13 @@ export function App() {
             {errorAlert && <div className="px-3 pt-3">{errorAlert}</div>}
             <TrackSummary track={track} />
             <PlanSettingsBar
+              start={start}
+              onStartChange={setStart}
+              times={times}
+              onTimeDisplayChange={setTimeDisplay}
+              tightBufferMin={tightBufferMin}
+              onTightBufferChange={setTightBufferMin}
+              formatClock={clock.format}
               estimator={estimator}
               params={timeModel.params}
               onModelChange={(id) =>
@@ -160,6 +180,8 @@ export function App() {
               defaultRestMin={defaultRestMin}
               activeSegment={highlighted ? highlighted.index : null}
               onActiveSegmentChange={setActiveSegment}
+              times={times}
+              tightBufferMin={tightBufferMin}
             />
           </div>
           {/* right: map and elevation profile, fixed */}

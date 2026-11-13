@@ -75,18 +75,30 @@
     "namePlaceholder": "Name (optional)",
     "nameLabel": "Name of {{control}}",
     "kmLabel": "Distance of {{control}} in km",
-    "openLabel": "Opening time of {{control}}, hours after the start",
-    "closeLabel": "Closing time of {{control}}, hours after the start",
+    "openLabel": {
+      "clock": "Opening time of {{control}}",
+      "elapsed": "Opening time of {{control}}, hours after the start"
+    },
+    "closeLabel": {
+      "clock": "Closing time of {{control}}",
+      "elapsed": "Closing time of {{control}}, hours after the start"
+    },
     "remove": "Remove {{control}}",
     "resetWindow": "Use the {{rules}} times for {{control}}",
     "invalidWindow": "Closes before it opens",
-    "invalidTime": "Enter the time after the start as H:MM, e.g. 13:30",
+    "invalidTime": {
+      "clock": "Enter a time of day as HH:MM, e.g. 13:30 – add the weekday for another day, e.g. Sun 09:00",
+      "elapsed": "Enter the time after the start as H:MM, e.g. 13:30"
+    },
     "kmOutOfRange": "Enter a distance between 0 and {{max}}",
     "duplicate": "There already is a checkpoint at this position.",
     "added": "{{control}} added at {{km}}",
     "addAtKm": "Add checkpoint at km",
     "add": "Add",
-    "windowsNote": "Control window: opening and closing time in hours:minutes after the start, pre-filled from the {{rules}} rules – edit them to match the route sheet.",
+    "windowsNote": {
+      "clock": "Control window: opening and closing time, pre-filled from the {{rules}} rules – edit them to match the route sheet.",
+      "elapsed": "Control window: opening and closing time in hours:minutes after the start, pre-filled from the {{rules}} rules – edit them to match the route sheet."
+    },
     "import": {
       "button_one": "Import {{count}} GPX waypoint",
       "button_other": "Import {{count}} GPX waypoints",
@@ -125,20 +137,41 @@
     "restLabel": "Rest at {{control}} in minutes",
     "invalidRest": "Enter the rest in whole minutes",
     "wait": "incl. {{time}} wait",
-    "note": "Speed and climb rate apply to the segment ending at the control – leave empty to use the plan's values. Buffer = time left until the control closes.",
+    "note": "Speed and climb rate apply to the segment ending at the control – leave empty to use the plan's values. Buffer = time left until the control closes: OK, Tight (less than {{tight}} min), Early (before the control opens – you wait) or Late (after it closes).",
     "settings": {
-      "label": "Pace and totals",
+      "label": "Start, pace and totals",
       "model": "Time model",
-      "paramLabel": "{{param}} ({{unit}})"
+      "paramLabel": "{{param}} ({{unit}})",
+      "startDate": "Start date",
+      "startTime": "Start time",
+      "invalidStartTime": "Enter the start time as HH:MM, e.g. 06:00",
+      "timeDisplay": "Show times as",
+      "display": {
+        "clock": "Clock time",
+        "elapsed": "Since start"
+      },
+      "tightBuffer": "Tight below (min)",
+      "invalidTightBuffer": "Enter whole minutes between 0 and {{max}}"
     },
     "totals": {
       "ride": "Riding",
       "stops": "Stops",
       "finish": "Finish after",
+      "finishAt": "Finish at",
       "movingSpeed": "Moving avg.",
       "overallSpeed": "Overall avg.",
       "tightest": "Smallest buffer",
       "tightestAt": "{{time}} at {{control}}"
+    },
+    "status": {
+      "ok": "OK",
+      "tight": "Tight",
+      "early": "Early",
+      "late": "Late",
+      "okHint": "Enough time left until the control closes",
+      "tightHint": "Little time left until the control closes",
+      "earlyHint": "Arrival before the control opens – you have to wait",
+      "lateHint": "Arrival after the control closes"
     }
   }
 }

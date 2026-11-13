@@ -6,6 +6,8 @@ $route: #c2410c;      // track line, accents
 $checkpoint: #1d4ed8; // checkpoint markers
 $ground: #f5f5f2;
 $line: #dadcd7;
+$status-ok: #15803d;    // arrival status (US6) – dark enough for small text on white (WCAG AA)
+$status-tight: #a16207;
 
 $primary: $ink;
 $info: $checkpoint;
@@ -451,4 +453,68 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
 // otherwise they escape it and make the whole page scroll horizontally.
 .table-responsive {
   position: relative;
+}
+
+// ---- Start time and status (US6) ----
+
+.plan-settings {
+  .plan-date {
+    width: 10rem;
+  }
+
+  .plan-time {
+    width: 6rem;
+  }
+}
+
+.checkpoint-table {
+  .time-input.with-day {
+    width: 5.625rem;
+    font-size: 0.8125rem;
+    padding-left: 0.375rem;
+    padding-right: 0.375rem;
+  }
+
+  // room for the "edited" dot
+  .is-overridden .time-input.with-day {
+    padding-right: 0.875rem;
+    background-position: right 0.3rem center;
+  }
+
+  // times with weekday are wider: the departure (arrival + rest) goes first
+  &.with-day .depart-col {
+    @container plan (max-width: 899.98px) {
+      display: none;
+    }
+  }
+
+  tr.is-late > * {
+    background-color: rgba($danger, 0.06);
+  }
+}
+
+// status: icon + text + colour, never colour alone
+.arrival-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &.is-ok {
+    color: $status-ok;
+  }
+
+  &.is-tight {
+    color: $status-tight;
+  }
+
+  &.is-early {
+    color: $checkpoint;
+  }
+
+  &.is-late {
+    color: $danger;
+  }
 }

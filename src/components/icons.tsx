@@ -66,3 +66,17 @@ export const RemoveIcon = (props: SVGProps<SVGSVGElement>) => (
 export const ResetIcon = (props: SVGProps<SVGSVGElement>) => (
   <SmallIcon d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" {...props} />
 );
+
+export const OkIcon = (props: SVGProps<SVGSVGElement>) => <SmallIcon d="M20 6 9 17l-5-5" {...props} />;
+
+export const TightIcon = (props: SVGProps<SVGSVGElement>) => (
+  <SmallIcon d="M12 3 2 21h20L12 3zM12 10v4M12 17.5v.5" {...props} />
+);
+
+export const EarlyIcon = (props: SVGProps<SVGSVGElement>) => (
+  <SmallIcon d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2" {...props} />
+);
+
+export const LateIcon = (props: SVGProps<SVGSVGElement>) => (
+  <SmallIcon d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15 9l-6 6M9 9l6 6" {...props} />
+);

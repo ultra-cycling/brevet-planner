@@ -29,7 +29,7 @@ verify them. Iterations and architecture: [plan.md](plan.md).
 | US3 | [Create segments from checkpoints](features/us03-segments.md) | divide the route into segments between the checkpoints | ✅ Done |
 | US4 | [Provide estimated ride times and rest times for segments](features/us04-ride-and-rest-times.md) | provide speed and climb per segment to calculate riding times | ✅ Done |
 | US5 | [Allow storing multiple route plans](features/us05-multiple-route-plans.md) | store several plans and switch between them | Planned |
-| US6 | [Provide start time for each event](features/us06-start-time.md) | calculate the timetable from a start time | Planned |
+| US6 | [Provide start time for each event](features/us06-start-time.md) | calculate the timetable from a start time | ✅ Done |
 | US7 | [Overlay for route in map](features/us07-route-overlays.md) | colour the route by e.g. road gradient or daylight | Planned |
 | US8 | [Show trackpoint tooltip](features/us08-trackpoint-tooltip.md) | see distance and expected times when hovering the route | Planned |
 | US9 | [Move existing checkpoints](features/us09-move-checkpoints.md) | drag checkpoints along the track on the map and the profile | Planned |

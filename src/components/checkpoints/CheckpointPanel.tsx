@@ -3,13 +3,16 @@ import { Alert, Button, Form, Table } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { importWaypoints, type CheckpointAction, type CheckpointState } from '../../domain/checkpoints';
 import type { ControlRules } from '../../domain/controls/ControlRules';
-import { formatElapsed, parseElapsed } from '../../domain/time/duration';
+import { arrivalStatus } from '../../domain/status';
+import { formatElapsed } from '../../domain/time/duration';
 import type { EstimatorParamDef, EstimatorParams, TimeEstimator } from '../../domain/time/TimeEstimator';
 import type { Timetable, TimetableRow } from '../../domain/timetable';
 import { positionAtDistance } from '../../domain/track/snap';
 import type { Track } from '../../domain/track/track';
 import { useFormat } from '../../i18n/useFormat';
 import { RemoveIcon, ResetIcon } from '../icons';
+import { StatusBadge } from '../timetable/StatusBadge';
+import type { TimeFormat } from '../timetable/useTimeFormat';
 import { CommitInput } from './CommitInput';
 import { useControlLabel } from './useControlLabel';
 
@@ -29,6 +32,10 @@ export interface CheckpointPanelProps {
   defaultRestMin: number;
   activeSegment: number | null;
   onActiveSegmentChange: (index: number | null) => void;
+  /** Shows and parses arrival, departure and control windows (clock time or since the start) */
+  times: TimeFormat;
+  /** Arrivals with less time left until the control closes are "tight" */
+  tightBufferMin: number;
 }
 
 const parseNumber = (text: string) => {
@@ -48,6 +55,8 @@ export function CheckpointPanel({
   defaultRestMin,
   activeSegment,
   onActiveSegmentChange,
+  times,
+  tightBufferMin,
 }: CheckpointPanelProps) {
   const { t } = useTranslation();
   const format = useFormat();
@@ -93,13 +102,13 @@ export function CheckpointPanel({
         <CommitInput
           id={`cp-${cp.id}-${which}`}
           size="sm"
-          className="time-input tabular-nums"
-          inputMode="numeric"
-          aria-label={t(`checkpoints.${which}Label`, { control: label })}
-          value={formatElapsed(value)}
+          className={`time-input tabular-nums${times.withDay ? ' with-day' : ''}`}
+          inputMode={times.withDay ? 'text' : 'numeric'}
+          aria-label={t(`checkpoints.${which}Label.${times.mode}`, { control: label })}
+          value={times.format(value)}
           onCommit={(text) => {
-            const minutes = parseElapsed(text);
-            if (minutes === null) return t('checkpoints.invalidTime');
+            const minutes = times.parse(text, value);
+            if (minutes === null) return t(`checkpoints.invalidTime.${times.mode}`);
             dispatch({ type: 'setWindow', id: cp.id, [key]: minutes === ruleValue ? null : minutes });
             return null;
           }}
@@ -168,6 +177,7 @@ export function CheckpointPanel({
   };
 
   const duration = (minutes: number | null) => (minutes === null ? '' : formatElapsed(minutes));
+  const time = (minutes: number | null) => (minutes === null ? '' : times.format(minutes));
 
   return (
     <section className="checkpoint-panel bg-white" aria-labelledby="checkpoints-heading">
@@ -210,7 +220,11 @@ export function CheckpointPanel({
         )}
 
         <div className="table-responsive">
-          <Table size="sm" className="checkpoint-table align-middle mb-0" aria-describedby="timetable-note">
+          <Table
+            size="sm"
+            className={`checkpoint-table align-middle mb-0${times.withDay ? ' with-day' : ''}`}
+            aria-describedby="timetable-note"
+          >
             <thead>
               <tr>
                 <th scope="col">{t('checkpoints.columns.control')}</th>
@@ -258,8 +272,10 @@ export function CheckpointPanel({
                 const label = controlLabel(row);
                 const overridden = cp.openOverrideMin !== null || cp.closeOverrideMin !== null;
                 const segment = entry.segment;
+                const status = arrivalStatus(entry, tightBufferMin);
                 const rowClass = [
                   row.invalid ? 'table-warning' : '',
+                  status === 'late' ? 'is-late' : '',
                   segment && segment.index === activeSegment ? 'is-active-segment' : '',
                 ].join(' ').trim();
                 return (
@@ -346,8 +362,8 @@ export function CheckpointPanel({
                     <td className="ride-col text-end tabular-nums" data-testid="ride-time">
                       {duration(entry.rideMin)}
                     </td>
-                    <td className="text-end tabular-nums fw-semibold" data-testid="arrival">
-                      {cp.kind === 'start' ? '' : duration(entry.arrivalMin)}
+                    <td className="text-end tabular-nums fw-semibold text-nowrap" data-testid="arrival">
+                      {cp.kind === 'start' ? '' : time(entry.arrivalMin)}
                     </td>
                     <td>
                       <div className="window-cell">
@@ -356,16 +372,17 @@ export function CheckpointPanel({
                       </div>
                     </td>
                     {restCell(entry, label)}
-                    <td className="depart-col text-end tabular-nums" data-testid="departure">
-                      {duration(entry.departureMin)}
+                    <td className="depart-col text-end tabular-nums text-nowrap" data-testid="departure">
+                      {time(entry.departureMin)}
                       {entry.waitMin >= 0.5 && (
                         <div className="small text-body-secondary text-nowrap" data-testid="wait">
                           {t('timetable.wait', { time: formatElapsed(entry.waitMin) })}
                         </div>
                       )}
                     </td>
-                    <td className="text-end tabular-nums" data-testid="buffer">
-                      {duration(entry.bufferMin)}
+                    <td className="text-end tabular-nums text-nowrap">
+                      <div data-testid="buffer">{duration(entry.bufferMin)}</div>
+                      {status && <StatusBadge status={status} />}
                     </td>
                     <td className="text-end text-nowrap">
                       {row.invalid && <span className="small me-2">{t('checkpoints.invalidWindow')}</span>}
@@ -403,7 +420,7 @@ export function CheckpointPanel({
           </Table>
         </div>
         <p id="timetable-note" className="small text-body-secondary mb-0">
-          {t('checkpoints.windowsNote', { rules: rulesName })} {t('timetable.note')}
+          {t(`checkpoints.windowsNote.${times.mode}`, { rules: rulesName })} {t('timetable.note', { tight: tightBufferMin })}
         </p>
 
         <Form className="d-flex flex-wrap align-items-start gap-2" onSubmit={onAddAtKm} noValidate>

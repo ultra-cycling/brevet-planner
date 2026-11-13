@@ -1,9 +1,10 @@
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { MapCheckpoint, TrackMapProps } from '../track/TrackMap';
 import { renderWithServices } from '../../test/renderWithServices';
 import { App } from '../App';
+import { localDate } from '../../domain/time/clock';
 
 // Leaflet needs a real layout engine – the stub lists the markers and simulates a click on the track.
 vi.mock('../track/TrackMap', () => ({
@@ -32,13 +33,18 @@ const gpx = `<gpx version="1.1" xmlns="http://www.topografix.com/GPX/1/1">
   ${Array.from({ length: 211 }, (_, i) => `<trkpt lat="${45 + i * DEG_PER_KM}" lon="7"><ele>${300 + i}</ele></trkpt>`).join('')}
   </trkseg></trk></gpx>`;
 
-async function renderWithTrack() {
+/**
+ * Renders the app with the 210 km track. US2/US4 tests check times relative to the start (as defined by the control
+ * rules), so they switch the timetable to "Since start"; US6 tests use the default clock times.
+ */
+async function renderWithTrack({ times = 'elapsed' }: { times?: 'clock' | 'elapsed' } = {}) {
   await renderWithServices(<App />);
   await userEvent.upload(
     screen.getByLabelText('Choose GPX file'),
     new File([gpx], 'line.gpx', { type: 'application/gpx+xml' }),
   );
   await screen.findByRole('heading', { level: 1, name: 'Line 200' });
+  if (times === 'elapsed') await userEvent.click(screen.getByRole('radio', { name: 'Since start' }));
 }
 
 /** Control, name, km, opens and closes of each table row as text (inputs: their value) */
@@ -315,5 +321,117 @@ describe('Timetable (US4)', () => {
     // 20 km at 50 km/h + 20 m climb = 0:26, the control opens at 0:35
     expect(cell(1, 'arrival')).toBe('0:26');
     expect(cell(1, 'departure')).toBe('0:35incl. 0:09 wait');
+  });
+});
+
+describe('Start time (US6)', () => {
+  const rows = () => screen.getAllByTestId('checkpoint-row');
+  const cell = (row: number, testId: string) => rows()[row].querySelector(`[data-testid="${testId}"]`)?.textContent ?? '';
+  const windowOf = (row: number) =>
+    ['open', 'close'].map((which) => (rows()[row].querySelector(`input[id$="-${which}"]`) as HTMLInputElement).value);
+  const setStart = async (date: string, time: string) => {
+    fireEvent.change(screen.getByLabelText('Start date'), { target: { value: date } });
+    const input = screen.getByLabelText('Start time');
+    await userEvent.clear(input);
+    await userEvent.type(input, `${time}{Enter}`);
+  };
+
+  it('shows the timetable as clock times from the default start time', async () => {
+    await renderWithTrack({ times: 'clock' });
+    expect(screen.getByLabelText('Start time')).toHaveValue('06:00'); // planning.defaultStartTime
+    expect(screen.getByLabelText('Start date')).toHaveValue(localDate());
+    expect(windowOf(0)).toEqual(['06:00', '07:00']);
+    expect(windowOf(1)).toEqual(['11:53', '19:30']); // 5:53 and 13:30 after the start
+    expect(cell(1, 'arrival')).toBe('13:48'); // 7:48 riding
+    expect(cell(1, 'buffer')).toBe('5:42');
+    expect(screen.getByTestId('total-finishAt')).toHaveTextContent('13:48');
+    expect(screen.getByTestId('total-finish')).toHaveTextContent('7:48');
+  });
+
+  it('recalculates the whole timetable when the start changes, with weekdays across midnight', async () => {
+    await renderWithTrack({ times: 'clock' });
+    await setStart('2026-11-14', '21:00'); // a Saturday
+    expect(windowOf(0)).toEqual(['Sat 21:00', 'Sat 22:00']);
+    expect(windowOf(1)).toEqual(['Sun 02:53', 'Sun 10:30']);
+    expect(cell(1, 'arrival')).toBe('Sun 04:48');
+    expect(screen.getByTestId('total-finishAt')).toHaveTextContent('Sun 04:48');
+
+    fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '2026-11-15' } });
+    expect(cell(1, 'arrival')).toBe('Mon 04:48');
+
+    // durations don't depend on the start
+    expect(cell(1, 'ride-time')).toBe('7:48');
+    expect(cell(1, 'buffer')).toBe('5:42');
+  });
+
+  it('rejects an invalid start time', async () => {
+    await renderWithTrack({ times: 'clock' });
+    const input = screen.getByLabelText('Start time');
+    await userEvent.clear(input);
+    await userEvent.type(input, '25:00{Enter}');
+    expect(input).toHaveAccessibleDescription('Enter the start time as HH:MM, e.g. 06:00');
+    expect(cell(1, 'arrival')).toBe('13:48');
+  });
+
+  it('switches between clock times and times since the start', async () => {
+    await renderWithTrack({ times: 'clock' });
+    expect(screen.getByRole('radio', { name: 'Clock time' })).toBeChecked();
+    await userEvent.click(screen.getByRole('radio', { name: 'Since start' }));
+    expect(cell(1, 'arrival')).toBe('7:48');
+    expect(windowOf(1)).toEqual(['5:53', '13:30']);
+    expect(screen.getByTestId('total-finishAt')).toHaveTextContent('13:48'); // always a clock time
+  });
+
+  it('enters control windows as clock times, with or without weekday', async () => {
+    await renderWithTrack({ times: 'clock' });
+    await setStart('2026-11-14', '21:00');
+    await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '120{Enter}');
+    const closes = screen.getByLabelText('Closing time of CP1');
+    expect(closes).toHaveValue('Sun 05:00'); // 8:00 after the start
+
+    await userEvent.clear(closes);
+    await userEvent.type(closes, '06:30{Enter}'); // the closest 06:30 is on Sunday
+    expect(closes).toHaveValue('Sun 06:30');
+    expect(closes.parentElement).toHaveClass('is-overridden');
+
+    await userEvent.clear(closes);
+    await userEvent.type(closes, 'Sat 23:30{Enter}');
+    expect(closes).toHaveValue('Sat 23:30');
+
+    await userEvent.clear(closes);
+    await userEvent.type(closes, 'soon{Enter}');
+    expect(closes).toHaveAccessibleDescription(
+      'Enter a time of day as HH:MM, e.g. 13:30 – add the weekday for another day, e.g. Sun 09:00',
+    );
+    await userEvent.type(closes, '{Escape}');
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Since start' }));
+    expect(screen.getByLabelText('Closing time of CP1, hours after the start')).toHaveValue('2:30');
+  });
+
+  it('marks each arrival as OK, Tight, Early or Late – with text, not only colour', async () => {
+    await renderWithTrack({ times: 'clock' });
+    expect(cell(0, 'status')).toBe(''); // no status for the start
+    expect(cell(1, 'status')).toBe('OK'); // finish: 5:42 left
+
+    const tight = screen.getByLabelText('Tight below (min)');
+    expect(tight).toHaveValue('75'); // planning.tightBufferMinutes
+    await userEvent.clear(tight);
+    await userEvent.type(tight, '400{Enter}');
+    expect(cell(1, 'status')).toBe('Tight');
+
+    await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '20{Enter}');
+    const speed = screen.getByLabelText('Speed (km/h)');
+    await userEvent.clear(speed);
+    await userEvent.type(speed, '50{Enter}');
+    expect(cell(1, 'status')).toBe('Early'); // 20 km in 0:26 – the control opens at 0:35
+
+    const closes = screen.getByLabelText('Closing time of CP1');
+    await userEvent.clear(closes);
+    await userEvent.type(closes, '06:20{Enter}');
+    expect(cell(1, 'status')).toBe('Late');
+    expect(rows()[1]).toHaveClass('is-late');
+    expect(rows()[1].querySelector('[data-testid="status"]')).toHaveAttribute('title', 'Arrival after the control closes');
+    expect(rows()[1].querySelector('[data-testid="status"] svg')).toBeInTheDocument();
   });
 });

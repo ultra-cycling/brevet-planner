@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { stubTiles, uploadSample } from './helpers';
+import { showTimesSinceStart, stubTiles, uploadSample } from './helpers';
 
 const minutes = (text: string | null) => {
   const [h, m] = text!.trim().split(':').map(Number);
@@ -12,6 +12,7 @@ test.describe('US4 – riding and rest times', () => {
     await stubTiles(page);
     await page.goto('./');
     await uploadSample(page);
+    await showTimesSinceStart(page);
     await page.getByRole('button', { name: 'Import 3 GPX waypoints' }).click();
   });
 
@@ -58,7 +59,7 @@ test.describe('US4 – riding and rest times', () => {
       await expect(page.getByRole('columnheader', { name, exact: true })).toBeVisible();
     }
     const width = await page.getByTestId('planner-sidebar').evaluate((el) => el.clientWidth);
-    const depart = page.getByRole('columnheader', { name: 'Depart' });
+    const depart = page.getByRole('columnheader', { name: 'Depart' }); // times since the start: no weekdays
     if (width >= 780) await expect(depart).toBeVisible();
     else await expect(depart).toBeHidden();
     const ride = page.getByRole('columnheader', { name: 'Ride' });

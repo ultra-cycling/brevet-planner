@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { stubTiles, uploadSample } from './helpers';
+import { showTimesSinceStart, stubTiles, uploadSample } from './helpers';
 
 /** Screen coordinates of the point at `fraction` of the drawn track line */
 async function pointOnTrackLine(page: Page, fraction: number) {
@@ -17,6 +17,7 @@ test.describe('US2 – mark checkpoints along the track', () => {
     await stubTiles(page);
     await page.goto('./');
     await uploadSample(page);
+    await showTimesSinceStart(page);
   });
 
   test('start and finish are controls with ACP windows', async ({ page }) => {

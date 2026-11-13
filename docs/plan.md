@@ -22,7 +22,7 @@ stories that aren't built yet are marked *proposed* and are refined at the start
 | 3  | ✅ | [US3 – Segments](features/us03-segments.md): distance, climb and descent between checkpoints; segment strip and highlighting |
 | 4  | ✅ | [US4 – Ride and rest times](features/us04-ride-and-rest-times.md): speed + climb-rate model, per-segment overrides, rest times, timetable and totals |
 | –  | ✅ | [Planner layout](#layout): plan column scrolling next to a fixed map (cross-cutting, after iteration 4) |
-| 5  |    | [US6 – Start time](features/us06-start-time.md): start date/time, clock times, live recalculation, OK/Tight/Early/Late status |
+| 5  | ✅ | [US6 – Start time](features/us06-start-time.md): start date/time, clock times, live recalculation, OK/Tight/Early/Late status |
 | 6  |    | [US5 – Multiple route plans](features/us05-multiple-route-plans.md): persist plans, plan switcher, create/rename/delete |
 | 7  |    | Phone layout – read-only timetable (cross-functional requirement in [design.md](design.md#cross-functional-requirements)) |
 | 8  |    | [US9 – Move checkpoints](features/us09-move-checkpoints.md): drag and drop on map and profile |
@@ -41,10 +41,11 @@ Design canvas (proposals A, B, C and the chosen hybrid): <https://claude.ai/arti
 ### Layout
 
 1. **Header** – brand, plan switcher (US5), language selector, *Upload GPX*, *New plan* (US5).
-2. **Plan column (left, scrolls on its own)** – track summary; plan settings (start date & time (US6), time model,
-   speed and climb rate, totals: riding, stops, finish, average speeds, smallest buffer); the editable timetable with
+2. **Plan column (left, scrolls on its own)** – track summary; plan settings (start date & time, clock time / since
+   start, tight threshold (US6); time model, speed and climb rate; totals: riding, stops, finish after / at, average
+   speeds, smallest buffer); the editable timetable with
    one row per control: name, km, segment (distance, ↑climb ↓descent), pace (speed, climb rate), ride time, arrival,
-   control window (ACP, editable), rest, departure, buffer (status with US6).
+   control window (ACP, editable), rest, departure, buffer with status (US6).
 3. **Map pane (right, fixed)** – CyclOSM map with the track and checkpoint markers filling the remaining space;
    elevation profile with the segment strip docked below it.
 
@@ -68,12 +69,19 @@ column is always shown:
 |-------------------|---------------------------------------------------------------------|
 | ≥ 1000 px         | All columns; speed/climb rate and opening/closing time side by side   |
 | < 1000 px         | Speed/climb rate and opening/closing time stacked in their cell       |
+| < 900 px          | *Depart* hidden when times carry a weekday (ride across midnight)     |
 | < 780 px          | *Depart* hidden                                                       |
 | < 760 px          | *Ride* hidden (riding time in the segment strip's tooltip)            |
 
+### Times (US6)
+
+Points in time (arrival, departure, control windows) are shown as clock times (24 h, with the weekday when the ride
+spans midnight) or – switchable in the plan settings – as hours:minutes since the start. Durations (riding time,
+buffer, totals) are always hours:minutes.
+
 ### Status of an arrival (US6)
 
-Shown as text + icon + colour, never colour alone:
+Shown in the *Buffer* column as text + icon + colour, never colour alone:
 
 | Status | Rule                                                      |
 |--------|-----------------------------------------------------------|
@@ -98,8 +106,8 @@ src/
   domain/      pure TypeScript, no React:
     track/       GPX parsing, track statistics, snapping, elevation profile
     controls/    control rules (ACP)
-    time/        time models (estimators) and their registry, durations
-    checkpoints.ts, segments.ts, timetable.ts
+    time/        time models (estimators) and their registry, durations, clock times
+    checkpoints.ts, segments.ts, timetable.ts, status.ts
   storage/     PlanRepository interface + implementations
   components/  React UI (Bootstrap via react-bootstrap)
 e2e/           Playwright browser tests
