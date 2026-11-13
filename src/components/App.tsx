@@ -25,7 +25,9 @@ import { useControlLabel } from './checkpoints/useControlLabel';
 import { useAppServices } from '../app/AppServices';
 import { SegmentStrip, type SegmentView } from './segments/SegmentStrip';
 import { PlanSettingsBar } from './timetable/PlanSettingsBar';
+import { TimetableCards } from './timetable/TimetableCards';
 import { useTimeFormat, type TimeDisplay } from './timetable/useTimeFormat';
+import { PHONE_QUERY, useMediaQuery } from './hooks/useMediaQuery';
 import { ElevationProfile } from './track/ElevationProfile';
 import { GpxDropZone } from './track/GpxDropZone';
 import { RouteOverlayPanel } from './track/RouteOverlayPanel';
@@ -44,6 +46,8 @@ export function App() {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [checkpointState, dispatch] = useReducer(checkpointReducer, emptyCheckpointState);
   const [announcement, setAnnouncement] = useState('');
+  // phones: read-only view – map, elevation profile and timetable cards only (docs/plan.md → Phone layout)
+  const isPhone = useMediaQuery(PHONE_QUERY);
   const [activeSegment, setActiveSegment] = useState<number | null>(null);
   const { config, estimators, overlays } = useAppServices();
   // plan-wide time model (defaults from config.yaml) – persisted with the plan in US5
@@ -165,6 +169,24 @@ export function App() {
       {track ? (
         <main className="planner">
           {/* left column: the plan – scrolls on its own while the map stays in place */}
+          {isPhone ? (
+            <div className="planner-sidebar" data-testid="planner-sidebar">
+              {errorAlert && <div className="px-3 pt-3">{errorAlert}</div>}
+              <section className="px-3 py-3" aria-labelledby="track-name">
+                <h1 id="track-name" className="h5 mb-0 text-break">
+                  {track.name}
+                </h1>
+                <p className="small text-body-secondary mb-3" data-testid="phone-summary">
+                  {t('timetable.cards.summary', {
+                    distance: format.km(track.distanceKm),
+                    climb: format.m(track.climbM),
+                    start: clock.format(0),
+                  })}
+                </p>
+                <TimetableCards timetable={timetable} times={clock} tightBufferMin={tightBufferMin} />
+              </section>
+            </div>
+          ) : (
           <div className="planner-sidebar" data-testid="planner-sidebar">
             {errorAlert && <div className="px-3 pt-3">{errorAlert}</div>}
             <TrackSummary track={track} />
@@ -211,23 +233,26 @@ export function App() {
               tightBufferMin={tightBufferMin}
             />
           </div>
+          )}
           {/* right: map and elevation profile, fixed */}
           <section className="planner-map" aria-label={t('map.sectionLabel')}>
             <TrackMap
               track={track}
               highlight={activeIndex !== null ? track.points[activeIndex] : null}
               checkpoints={mapCheckpoints}
-              onTrackClick={(lat, lon) => addCheckpoint(snapToTrack(track, lat, lon).distanceKm, 'map')}
+              onTrackClick={isPhone ? undefined : (lat, lon) => addCheckpoint(snapToTrack(track, lat, lon).distanceKm, 'map')}
               onCheckpointClick={(id) => document.getElementById(`cp-${id}-name`)?.focus()}
               highlightPath={highlightPath}
-              overlayLines={overlayResult?.lines}
+              overlayLines={isPhone ? null : overlayResult?.lines}
             >
-              <RouteOverlayPanel
-                overlay={overlay}
-                onChange={setOverlayId}
-                distanceByClass={overlayResult?.distances ?? null}
-                noteValues={{ zone: timeZone.replaceAll('_', ' ') }}
-              />
+              {!isPhone && (
+                <RouteOverlayPanel
+                  overlay={overlay}
+                  onChange={setOverlayId}
+                  distanceByClass={overlayResult?.distances ?? null}
+                  noteValues={{ zone: timeZone.replaceAll('_', ' ') }}
+                />
+              )}
             </TrackMap>
             <div className="planner-profile border-top bg-white">
               <ElevationProfile
@@ -235,7 +260,7 @@ export function App() {
                 activeIndex={activeIndex}
                 onActiveIndexChange={setActiveIndex}
                 checkpoints={mapCheckpoints}
-                onPick={(km) => addCheckpoint(km, 'profile')}
+                onPick={isPhone ? undefined : (km) => addCheckpoint(km, 'profile')}
                 highlightRange={highlighted}
                 footer={
                   <SegmentStrip

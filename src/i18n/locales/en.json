@@ -179,7 +179,8 @@
       "start": "Start",
       "minutes_one": "{{count}} min",
       "minutes_other": "{{count}} min",
-      "buffer": "{{time}} left"
+      "buffer": "{{time}} left",
+      "summary": "{{distance}} · ↑{{climb}} · start {{start}}"
     }
   },
   "overlays": {

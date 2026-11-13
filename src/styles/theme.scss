@@ -554,19 +554,7 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
 }
 
 // ---- Phone layout (iteration 7) ----
-
-// read-only timetable cards replace the editable table when the plan column is narrow
-.timetable-cards {
-  display: none;
-
-  @container plan (max-width: 575.98px) {
-    display: block;
-
-    & + .table-responsive {
-      display: none;
-    }
-  }
-}
+// read-only: map, elevation profile and timetable cards; the page scrolls as a whole
 
 .timetable-card {
   padding: 0.625rem 0.75rem;
@@ -596,7 +584,6 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
     font-size: 1.125rem;
   }
 
-  // the page scrolls as a whole: small map on top, then the plan – no elevation profile, the cards are the main content
   .app-shell.has-track {
     height: auto;
     min-height: 100dvh;
@@ -614,40 +601,11 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
 
   .planner-map {
     height: auto;
-  }
 
-  .planner-profile {
-    display: none;
-  }
-
-  .track-map {
-    display: flex;
-    flex-direction: column;
-
-    .leaflet-container {
-      flex: 0 0 auto;
-      height: 34dvh !important;
-      min-height: 11rem;
-    }
-  }
-
-  // overlay selection and legend below the map instead of covering it
-  .route-overlay-panel {
-    position: static;
-    width: auto;
-    max-width: none;
-    border-width: 1px 0 0;
-    border-radius: 0;
-    box-shadow: none !important;
-
-    .overlay-legend {
-      display: flex;
-      flex-wrap: wrap;
-      column-gap: 1rem;
-
-      li + li {
-        margin-top: 0;
-      }
+    .track-map {
+      flex: none;
+      height: 38dvh;
+      min-height: 12rem;
     }
   }
 }

@@ -2,41 +2,65 @@ import { expect, test, type Page } from '@playwright/test';
 import { stubTiles, uploadSample } from './helpers';
 
 const cards = (page: Page) => page.getByTestId('timetable-card');
+const PHONE = { width: 390, height: 844 };
 
-test.describe('Phone layout – read-only timetable', () => {
+/** Point at `fraction` of the drawn track line, in page coordinates */
+const pointOnTrack = (page: Page, fraction: number) =>
+  page.locator('path.track-line').evaluate((path: SVGPathElement, f) => {
+    const p = path.getPointAtLength(path.getTotalLength() * f);
+    const screen = new DOMPoint(p.x, p.y).matrixTransform(path.getScreenCTM()!);
+    return { x: screen.x, y: screen.y };
+  }, fraction);
+
+test.describe('Phone layout – map, elevation profile and timetable, read-only', () => {
   test.beforeEach(async ({ page }) => {
     await stubTiles(page);
     await page.goto('./');
     await uploadSample(page);
   });
 
-  test('a small map on top and the timetable as cards, without horizontal scrolling', async ({ page }) => {
+  test('shows only the map, the elevation profile and the timetable, without horizontal scrolling', async ({ page }) => {
     const header = (await page.locator('.app-header').boundingBox())!;
     expect(header.height).toBeLessThan(70); // one row
     await expect(page.getByRole('button', { name: 'Upload GPX' })).toBeVisible(); // icon only, still named
 
+    // map first, then the profile, then the timetable
     const map = (await page.locator('.leaflet-container').boundingBox())!;
-    expect(map.y).toBeLessThan(header.y + header.height + 1); // right below the header
-    expect(map.height).toBeGreaterThan(150);
-    expect(map.height).toBeLessThan(844 * 0.4);
-    await expect(page.locator('.planner-profile')).toBeHidden(); // the profile needs a wider screen
+    const profile = (await page.locator('.elevation-profile').boundingBox())!;
+    const timetable = (await page.getByRole('list', { name: 'Timetable' }).boundingBox())!;
+    expect(map.y).toBeLessThan(header.y + header.height + 1);
+    expect(map.height).toBeGreaterThan(180);
+    expect(profile.y).toBeGreaterThanOrEqual(map.y + map.height - 1);
+    expect(timetable.y).toBeGreaterThan(profile.y + profile.height - 1);
 
-    await expect(page.locator('.checkpoint-table')).toBeHidden();
-    await expect(page.getByRole('list', { name: 'Timetable' })).toBeVisible();
     await expect(cards(page)).toHaveCount(2);
     await expect(cards(page).first()).toContainText('Start');
     await expect(cards(page).last()).toContainText('Finish');
 
+    // nothing to edit
+    await expect(page.getByRole('region', { name: 'Start, pace and totals' })).toHaveCount(0);
+    await expect(page.locator('.checkpoint-table')).toHaveCount(0);
+    await expect(page.getByTestId('route-overlay-panel')).toHaveCount(0);
+    // (the segment chips below the profile only highlight a segment)
+    await expect(page.locator('main').locator('input, select, button:not(.segment-chip)')).toHaveCount(0);
+
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(0);
-
-    // the page scrolls as a whole: the map moves away while reading the cards
-    await cards(page).last().scrollIntoViewIfNeeded();
-    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   });
 
-  test('cards show arrival, status, control window and buffer of every control', async ({ page }) => {
-    await page.getByRole('button', { name: 'Import 3 GPX waypoints' }).tap();
+  test('tapping the map or the profile does not add checkpoints', async ({ page }) => {
+    const point = await pointOnTrack(page, 0.5);
+    await page.touchscreen.tap(point.x, point.y);
+    const profile = (await page.getByRole('slider', { name: 'Elevation profile' }).boundingBox())!;
+    await page.touchscreen.tap(profile.x + profile.width / 2, profile.y + profile.height / 2);
+    await expect(cards(page)).toHaveCount(2);
+  });
+
+  test('a plan prepared on a wider screen is shown as cards with arrival, status, window and buffer', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.getByRole('button', { name: 'Import 3 GPX waypoints' }).click();
+    await page.setViewportSize(PHONE);
+
     await expect(cards(page)).toHaveCount(5);
     const cp1 = cards(page).nth(1);
     await expect(cp1).toContainText('CP1 Riverside Café');
@@ -45,31 +69,19 @@ test.describe('Phone layout – read-only timetable', () => {
     await expect(cp1.getByTestId('card-buffer')).toHaveText(/^-?\d+:\d\d left$/);
     await expect(cp1).toContainText(/Control window\s*\d\d:\d\d – \d\d:\d\d/);
     await expect(cp1).toContainText(/Rest\s*15 min/);
+    await expect(page.getByTestId('phone-summary')).toContainText('start 06:00');
 
-    // the plan settings stay editable: a later start moves every arrival
-    const before = await cp1.getByTestId('card-arrival').textContent();
-    const start = page.getByLabel('Start time');
-    await start.fill('07:00');
-    await start.press('Enter');
-    await expect(cp1.getByTestId('card-arrival')).not.toHaveText(before!);
-  });
+    // the map re-fits the track to its new size (whole zoom levels: the track fills half to all of the map)
+    await expect
+      .poll(async () => {
+        const track = (await page.locator('path.track-line').boundingBox())!;
+        const map = (await page.locator('.leaflet-container').boundingBox())!;
+        return Math.max(track.width / map.width, track.height / map.height);
+      })
+      .toBeGreaterThan(0.45);
 
-  test('tapping the track adds a checkpoint card', async ({ page }) => {
-    const point = await page.locator('path.track-line').evaluate((path: SVGPathElement) => {
-      const p = path.getPointAtLength(path.getTotalLength() * 0.5);
-      const screen = new DOMPoint(p.x, p.y).matrixTransform(path.getScreenCTM()!);
-      return { x: screen.x, y: screen.y };
-    });
-    await page.touchscreen.tap(point.x, point.y);
-    await expect(cards(page)).toHaveCount(3);
-    await expect(cards(page).nth(1)).toContainText('CP1');
-  });
-
-  test('the route overlay panel sits below the map instead of covering it', async ({ page }) => {
-    await page.getByLabel('Colour the route by').selectOption({ label: 'Road gradient' });
-    const map = (await page.locator('.leaflet-container').boundingBox())!;
-    const panel = (await page.getByTestId('route-overlay-panel').boundingBox())!;
-    expect(panel.y).toBeGreaterThanOrEqual(map.y + map.height - 1);
-    await expect(page.getByTestId('legend-item')).toHaveCount(5);
+    // the page scrolls as a whole: the map moves away while reading the cards
+    await cards(page).last().scrollIntoViewIfNeeded();
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   });
 });

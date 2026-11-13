@@ -62,7 +62,7 @@ the profile fits the map pane, no page scrolling.
 |---------------------|---------------------------------------------------------------------------------------|
 | Desktop (≥ 1200 px) | Plan column (50 % of the width, 640–1040 px) left, map pane right                     |
 | Tablet (≥ 768 px)   | Map pane on top (half the height, fixed), plan column below                           |
-| Phone (< 768 px)    | The page scrolls: small map, then the plan with read-only timetable cards (see below) |
+| Phone (< 768 px)    | Read-only: map, elevation profile and timetable cards; the page scrolls (see below) |
 
 The timetable adapts to the width of the plan column (CSS container queries), not to the viewport. The *Segment*
 column is always shown:
@@ -77,18 +77,24 @@ column is always shown:
 
 ### Phone layout
 
-A simple timetable for the road (cross-functional requirement): below 768 px the page scrolls as a whole – header in
-one row (*Upload GPX* as icon), a small map (about a third of the screen) with the overlay selection and legend below
-it, no elevation profile. When the plan column is narrower than 576 px the editable table is replaced by read-only
-cards, one per control: name, km, arrival (large), status and buffer, control window, rest, departure, segment
-(distance, climb/descent, riding time). Start, pace, time zone and adding checkpoints (tap on the track, GPX
-waypoints, km) stay available; names, windows, rests and per-segment pace are edited on a tablet or desktop.
+A read-only timetable for the road (cross-functional requirement). Below 768 px the page scrolls as a whole and shows
+only:
 
-Verified by [phone.spec.ts](../e2e/phone.spec.ts) (390 × 844, touch): *a small map on top and the timetable as cards,
-without horizontal scrolling*, *cards show arrival, status, control window and buffer of every control*, *tapping the
-track adds a checkpoint card*, *the route overlay panel sits below the map instead of covering it*; and
-[Checkpoints.test.tsx](../src/components/checkpoints/Checkpoints.test.tsx) – *shows a read-only card per control with
-arrival, status, window and buffer*.
+1. the map with the track and the checkpoint markers (about 40 % of the screen height),
+2. the elevation profile with the segment strip,
+3. track name, distance, climb and start, followed by one card per control: name, km, arrival (large), status and
+   buffer, control window, rest, departure, segment (distance, climb/descent, riding time).
+
+Plan settings, the editable table, the route overlays and all editing are left out; tapping the map or the profile
+doesn't add checkpoints. The header keeps *Upload GPX* (as icon) – until plans are stored ([US5](features/us05-multiple-route-plans.md))
+it is the only way to get a track onto the phone. A plan prepared on a wider screen keeps its state when the window
+gets narrow (and is editable again when it gets wide); the map re-fits the track whenever its size changes.
+
+Verified by [phone.spec.ts](../e2e/phone.spec.ts) (390 × 844, touch): *shows only the map, the elevation profile and
+the timetable, without horizontal scrolling*, *tapping the map or the profile does not add checkpoints*, *a plan
+prepared on a wider screen is shown as cards with arrival, status, window and buffer*; and
+[Checkpoints.test.tsx](../src/components/checkpoints/Checkpoints.test.tsx) – *shows only map, profile and read-only
+timetable cards*.
 
 ### Times (US6)
 

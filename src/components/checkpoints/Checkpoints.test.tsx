@@ -1,6 +1,6 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MapCheckpoint, TrackMapProps } from '../track/TrackMap';
 import { renderWithServices } from '../../test/renderWithServices';
 import { App } from '../App';
@@ -498,14 +498,49 @@ describe('Route overlays (US7)', () => {
   });
 });
 
-describe('Phone timetable (iteration 7)', () => {
-  it('shows a read-only card per control with arrival, status, window and buffer', async () => {
+describe('Phone view (iteration 7)', () => {
+  /** Simulated viewport: `useMediaQuery` reads window.matchMedia, which jsdom doesn't provide */
+  function mockViewport() {
+    let phone = false;
+    const listeners = new Set<() => void>();
+    window.matchMedia = ((query: string) => ({
+      get matches() {
+        return phone;
+      },
+      media: query,
+      addEventListener: (_: string, listener: () => void) => listeners.add(listener),
+      removeEventListener: (_: string, listener: () => void) => listeners.delete(listener),
+    })) as unknown as typeof window.matchMedia;
+    return {
+      setPhone(value: boolean) {
+        phone = value;
+        act(() => listeners.forEach((listener) => listener()));
+      },
+    };
+  }
+
+  afterEach(() => {
+    delete (window as Partial<Window>).matchMedia;
+  });
+
+  it('shows only map, profile and read-only timetable cards', async () => {
+    const viewport = mockViewport();
     await renderWithTrack({ times: 'clock' });
     await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '100{Enter}');
+
+    viewport.setPhone(true);
+    expect(screen.getByTestId('track-map')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Elevation profile' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Line 200' })).toBeInTheDocument();
+    expect(screen.getByTestId('phone-summary')).toHaveTextContent('210.0 km · ↑210 m · start 06:00');
+    // no settings, no table, no editing
+    expect(screen.queryByRole('region', { name: 'Start, pace and totals' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('checkpoint-row')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('route-overlay-panel')).not.toBeInTheDocument();
+    expect(screen.getByTestId('planner-sidebar').querySelector('input, select, button')).toBeNull();
+
     const cards = screen.getAllByTestId('timetable-card');
     expect(cards.map((card) => card.querySelector('h3')!.textContent)).toEqual(['Start', 'CP1', 'Finish']);
-    expect(cards.every((card) => card.querySelector('input') === null)).toBe(true); // read-only
-
     const [start, cp1, finish] = cards;
     expect(start.querySelector('[data-testid="card-arrival"]')).toHaveTextContent('06:00');
     expect(start.querySelector('[data-testid="status"]')).toBeNull();
@@ -517,5 +552,13 @@ describe('Phone timetable (iteration 7)', () => {
     expect(finish.querySelector('[data-testid="status"]')).toHaveTextContent('OK');
     expect(finish.querySelector('[data-testid="card-buffer"]')).toHaveTextContent('5:27 left');
     expect(finish).toHaveTextContent('Control window11:53 – 19:30');
+
+    // tapping the track doesn't add checkpoints
+    await userEvent.click(screen.getByRole('button', { name: 'click track at km 30' }));
+    expect(screen.getAllByTestId('timetable-card')).toHaveLength(3);
+
+    // back on a wide screen everything is editable again, the plan is unchanged
+    viewport.setPhone(false);
+    expect(screen.getAllByTestId('checkpoint-row')).toHaveLength(3);
   });
 });

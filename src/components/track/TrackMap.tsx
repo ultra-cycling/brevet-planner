@@ -20,11 +20,21 @@ const PANEL_SPACE_PX = 264;
 function FitToTrack({ track, reservePanel }: { track: Track; reservePanel: boolean }) {
   const map = useMap();
   useEffect(() => {
-    // on phones the panel sits below the map (theme.scss → phone layout)
-    const overlaid = reservePanel && window.matchMedia('(min-width: 768px)').matches;
-    const right = overlaid ? Math.min(PANEL_SPACE_PX, map.getSize().x * 0.4) : 24;
-    // without animation: the initial view (MapContainer bounds) differs only by the padding
-    map.fitBounds(track.bounds, { paddingTopLeft: [24, 24], paddingBottomRight: [right, 24], animate: false });
+    const fit = () => {
+      map.invalidateSize({ animate: false }); // Leaflet caches the container size
+      const right = reservePanel ? Math.min(PANEL_SPACE_PX, map.getSize().x * 0.4) : 24;
+      // without animation: the initial view (MapContainer bounds) differs only by the padding
+      map.fitBounds(track.bounds, { paddingTopLeft: [24, 24], paddingBottomRight: [right, 24], animate: false });
+    };
+    fit();
+    // the container changes size with the layout (rotation, phone ↔ tablet): show the whole track again
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => {
+      const size = map.getSize();
+      if (size.x !== container.clientWidth || size.y !== container.clientHeight) fit();
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
   }, [map, track, reservePanel]);
   return null;
 }
@@ -100,7 +110,7 @@ export function TrackMap({
     <div className="track-map" role="region" aria-label={t('map.label')}>
       <MapContainer bounds={track.bounds} boundsOptions={{ padding: [24, 24] }} scrollWheelZoom className="h-100">
         <TileLayer url={map.tileUrl} subdomains={map.subdomains} maxZoom={map.maxZoom} attribution={map.attribution} />
-        <FitToTrack track={track} reservePanel={children !== undefined} />
+        <FitToTrack track={track} reservePanel={Boolean(children)} />
         {/* white casing below the route keeps it readable on any map background */}
         <Polyline positions={positions} pathOptions={{ color: '#FFFFFF', weight: 8, opacity: 0.9 }} interactive={false} />
         <Polyline positions={positions} pathOptions={{ color: ROUTE, weight: 4 }} className="track-line" interactive={false} />
