@@ -91,3 +91,73 @@ describe('ElevationProfile', () => {
     expect(screen.queryByRole('slider')).not.toBeInTheDocument();
   });
 });
+
+describe('ElevationProfile – moving checkpoints (US9)', () => {
+  const RECT = { left: 100, width: 400, top: 0, height: 140, right: 500, bottom: 140, x: 100, y: 0, toJSON: () => ({}) };
+  const checkpoints = [{ id: 'cp1', distanceKm: 20, label: 'CP1 · 20.0 km', tag: '1' }];
+
+  async function renderProfile(props: Partial<Parameters<typeof ElevationProfile>[0]> = {}) {
+    const onMove = vi.fn(() => true);
+    const onPick = vi.fn();
+    await renderWithServices(
+      <ElevationProfile
+        track={track}
+        activeIndex={null}
+        onActiveIndexChange={() => {}}
+        checkpoints={checkpoints}
+        onPick={onPick}
+        onCheckpointMove={onMove}
+        {...props}
+      />,
+    );
+    screen.getByRole('slider').getBoundingClientRect = () => RECT;
+    return { onMove, onPick, handle: screen.getByTestId('profile-checkpoint-handle'), line: screen.getByTestId('profile-checkpoint') };
+  }
+
+  it('drags a checkpoint line by its number to another distance', async () => {
+    const { onMove, onPick, handle, line } = await renderProfile();
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 180 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 300 }); // half way → km 50
+    expect(line).toHaveClass('is-dragging');
+    expect(parseFloat(line.style.left)).toBeCloseTo(50, 1);
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 300 });
+    fireEvent.click(handle);
+
+    expect(onMove).toHaveBeenCalledWith('cp1', expect.closeTo(50, 1)); // half the distance
+    expect(onPick).not.toHaveBeenCalled(); // the drop doesn't add a checkpoint
+    expect(line).not.toHaveClass('is-dragging');
+  });
+
+  it('keeps the grab offset: grabbing beside the line does not make it jump', async () => {
+    const { onMove, handle } = await renderProfile();
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 184 }); // 1 km right of the line
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 304 });
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 304 });
+    expect(onMove).toHaveBeenCalledWith('cp1', expect.closeTo(50, 1));
+  });
+
+  it('cancels the drag with Escape', async () => {
+    const { onMove, handle, line } = await renderProfile();
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 180 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 300 });
+    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 300 });
+
+    expect(onMove).not.toHaveBeenCalled();
+    expect(parseFloat(line.style.left)).toBeCloseTo(20, 1);
+  });
+
+  it('shows a checkpoint dragged on the map at its current distance', async () => {
+    const { line } = await renderProfile({ dragPreview: { id: 'cp1', distanceKm: 70 } });
+    expect(line).toHaveClass('is-dragging');
+    expect(parseFloat(line.style.left)).toBeCloseTo(70, 1);
+  });
+
+  it('cannot be dragged without onCheckpointMove', async () => {
+    const { handle, line } = await renderProfile({ onCheckpointMove: undefined });
+    expect(handle).not.toHaveClass('is-draggable');
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 180 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 300 });
+    expect(line).not.toHaveClass('is-dragging');
+  });
+});

@@ -1,11 +1,12 @@
 import 'leaflet/dist/leaflet.css';
 
-import { divIcon, type DivIcon } from 'leaflet';
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { divIcon, type DivIcon, type LatLng, type Marker as LeafletMarker } from 'leaflet';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet';
 import { useTranslation } from 'react-i18next';
 import { useConfig } from '../../app/AppServices';
 import { haversineKm } from '../../domain/track/geo';
+import { snapToTrack } from '../../domain/track/snap';
 import type { Track, TrackPoint } from '../../domain/track/track';
 
 const ROUTE = '#C2410C';
@@ -47,6 +48,8 @@ export interface MapCheckpoint {
   label: string;
   lat: number;
   lon: number;
+  /** Distance along the track */
+  distanceKm: number;
 }
 
 export interface TrackMapProps {
@@ -57,6 +60,13 @@ export interface TrackMapProps {
   /** Click on (or next to) the track line */
   onTrackClick?: (lat: number, lon: number) => void;
   onCheckpointClick?: (id: string) => void;
+  /**
+   * Drag and drop of a checkpoint marker along the track (US9). Called with the snapped distance on drop; return
+   * `false` to reject the move – the marker then jumps back. Without it the markers can't be dragged.
+   */
+  onCheckpointMove?: (id: string, distanceKm: number) => boolean;
+  /** Checkpoint and distance under the dragged marker while dragging, `null` when the drag ends */
+  onCheckpointDrag?: (drag: { id: string; distanceKm: number } | null) => void;
   /** Part of the track to emphasise, e.g. the hovered segment */
   highlightPath?: readonly [number, number][] | null;
   /** Route coloured by an overlay (US7): one line per run of equal class */
@@ -89,12 +99,92 @@ function checkpointIcon(number: number): DivIcon {
   return icon;
 }
 
+interface CheckpointMarkerProps {
+  checkpoint: MapCheckpoint;
+  track: Track;
+  onClick?: (id: string) => void;
+  onMove?: (id: string, distanceKm: number) => boolean;
+  onDrag?: (drag: { id: string; distanceKm: number } | null) => void;
+}
+
+/**
+ * Numbered checkpoint marker. When `onMove` is given it can be dragged: it stays snapped to the track while dragging,
+ * Escape cancels the drag, and a rejected drop puts it back (US9).
+ */
+function CheckpointMarker({ checkpoint: cp, track, onClick, onMove, onDrag }: CheckpointMarkerProps) {
+  const drag = useRef<{ origin: LatLng; distanceKm: number } | null>(null);
+  const markerRef = useRef<LeafletMarker>(null);
+  const onDragRef = useRef(onDrag);
+  useEffect(() => {
+    onDragRef.current = onDrag;
+  });
+  // a new array on every render would make react-leaflet move the marker back while it is being dragged
+  const position = useMemo<[number, number]>(() => [cp.lat, cp.lon], [cp.lat, cp.lon]);
+
+  // Escape while dragging: stop the drag (disabling ends it in Leaflet – without a dragend event) and put the marker back
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const marker = markerRef.current;
+      const state = drag.current;
+      if (e.key !== 'Escape' || !state || !marker?.dragging) return;
+      drag.current = null;
+      marker.dragging.disable();
+      marker.setLatLng(state.origin);
+      marker.dragging.enable();
+      onDragRef.current?.(null);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  return (
+    <Marker
+      ref={markerRef}
+      position={position}
+      icon={checkpointIcon(cp.number)}
+      title={cp.label}
+      alt={cp.label}
+      draggable={onMove !== undefined}
+      autoPan
+      eventHandlers={{
+        click: () => onClick?.(cp.id),
+        dragstart: (e) => {
+          drag.current = { origin: (e.target as LeafletMarker).getLatLng(), distanceKm: cp.distanceKm };
+        },
+        drag: (e) => {
+          if (!drag.current) return;
+          const marker = e.target as LeafletMarker;
+          const { lat, lng } = marker.getLatLng();
+          const snapped = snapToTrack(track, lat, lng);
+          marker.setLatLng([snapped.lat, snapped.lon]);
+          drag.current.distanceKm = snapped.distanceKm;
+          onDrag?.({ id: cp.id, distanceKm: snapped.distanceKm });
+        },
+        dragend: (e) => {
+          const marker = e.target as LeafletMarker;
+          const state = drag.current;
+          drag.current = null;
+          onDrag?.(null);
+          if (!state) return;
+          const accepted = onMove!(cp.id, state.distanceKm);
+          // a rejected drop: back to where it was (the position prop hasn't changed)
+          if (!accepted) marker.setLatLng(state.origin);
+        },
+      }}
+    >
+      <Tooltip>{cp.label}</Tooltip>
+    </Marker>
+  );
+}
+
 export function TrackMap({
   track,
   highlight,
   checkpoints = [],
   onTrackClick,
   onCheckpointClick,
+  onCheckpointMove,
+  onCheckpointDrag,
   highlightPath,
   overlayLines,
   children,
@@ -162,16 +252,14 @@ export function TrackMap({
           </CircleMarker>
         )}
         {checkpoints.map((cp) => (
-          <Marker
+          <CheckpointMarker
             key={cp.id}
-            position={[cp.lat, cp.lon]}
-            icon={checkpointIcon(cp.number)}
-            title={cp.label}
-            alt={cp.label}
-            eventHandlers={{ click: () => onCheckpointClick?.(cp.id) }}
-          >
-            <Tooltip>{cp.label}</Tooltip>
-          </Marker>
+            checkpoint={cp}
+            track={track}
+            onClick={onCheckpointClick}
+            onMove={onCheckpointMove}
+            onDrag={onCheckpointDrag}
+          />
         ))}
         {highlight && (
           <CircleMarker

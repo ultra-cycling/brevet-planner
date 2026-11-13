@@ -6,6 +6,7 @@ import {
   controlRows,
   emptyCheckpointState,
   findCheckpointNear,
+  moveConflict,
   type CheckpointSource,
 } from '../domain/checkpoints';
 import { acpControlRules } from '../domain/controls/acp';
@@ -17,7 +18,7 @@ import { browserTimeZone, startInstantUtc } from '../domain/time/timeZone';
 import { resolveParams, type EstimatorParams } from '../domain/time/TimeEstimator';
 import { buildTimetable } from '../domain/timetable';
 import { positionAtDistance, snapToTrack, trackSlice } from '../domain/track/snap';
-import type { Track } from '../domain/track/track';
+import { nearestPointIndex, type Track } from '../domain/track/track';
 import { useFormat } from '../i18n/useFormat';
 import { AppHeader } from './AppHeader';
 import { CheckpointPanel } from './checkpoints/CheckpointPanel';
@@ -49,6 +50,8 @@ export function App() {
   // phones: read-only view – map, elevation profile and timetable cards only (docs/plan.md → Phone layout)
   const isPhone = useMediaQuery(PHONE_QUERY);
   const [activeSegment, setActiveSegment] = useState<number | null>(null);
+  // checkpoint being dragged on the map – shown on the profile as well (US9)
+  const [mapDrag, setMapDrag] = useState<{ id: string; distanceKm: number } | null>(null);
   const { config, estimators, overlays } = useAppServices();
   // plan-wide time model (defaults from config.yaml) – persisted with the plan in US5
   const [timeModel, setTimeModel] = useState(() => {
@@ -141,6 +144,37 @@ export function App() {
     return true;
   };
 
+  /**
+   * Moves an intermediate control along the track (drag and drop, km input). Returns an error message if it can't be
+   * placed there: outside the track or within 100 m of another checkpoint.
+   */
+  const moveCheckpoint = (id: string, distanceKm: number): string | null => {
+    if (!track) return null;
+    const row = rows.find((r) => r.checkpoint.id === id);
+    if (!row || row.checkpoint.kind !== 'control') return null;
+    const position = positionAtDistance(track, distanceKm);
+    const conflict = moveConflict(checkpointState.checkpoints, id, position.distanceKm);
+    if (conflict) {
+      const blocking = rows.find((r) => r.checkpoint.id === conflict.id)!;
+      const message = t('checkpoints.moveTooClose', { control: controlLabel(blocking) });
+      setAnnouncement(message);
+      return message;
+    }
+    dispatch({ type: 'move', id, position });
+    const number =
+      checkpointState.checkpoints.filter((cp) => cp.kind === 'control' && cp.id !== id && cp.distanceKm < position.distanceKm)
+        .length + 1;
+    setAnnouncement(
+      t('checkpoints.moved', {
+        from: controlLabel(row),
+        control: t('checkpoints.cp', { number }),
+        km: format.km(position.distanceKm),
+      }),
+    );
+    return null;
+  };
+  const onCheckpointDrop = (id: string, distanceKm: number) => moveCheckpoint(id, distanceKm) === null;
+
   const mapCheckpoints = rows.flatMap((row) =>
     row.number === null
       ? []
@@ -223,6 +257,7 @@ export function App() {
               rules={rules}
               dispatch={dispatch}
               onAdd={(km) => addCheckpoint(km, 'km')}
+              onMove={moveCheckpoint}
               timetable={timetable}
               estimator={estimator}
               planParams={timeModel.params}
@@ -242,6 +277,11 @@ export function App() {
               checkpoints={mapCheckpoints}
               onTrackClick={isPhone ? undefined : (lat, lon) => addCheckpoint(snapToTrack(track, lat, lon).distanceKm, 'map')}
               onCheckpointClick={(id) => document.getElementById(`cp-${id}-name`)?.focus()}
+              onCheckpointMove={isPhone ? undefined : onCheckpointDrop}
+              onCheckpointDrag={(drag) => {
+                setMapDrag(drag);
+                setActiveIndex(drag ? nearestPointIndex(track.points, drag.distanceKm) : null);
+              }}
               highlightPath={highlightPath}
               overlayLines={isPhone ? null : overlayResult?.lines}
             >
@@ -261,6 +301,8 @@ export function App() {
                 onActiveIndexChange={setActiveIndex}
                 checkpoints={mapCheckpoints}
                 onPick={isPhone ? undefined : (km) => addCheckpoint(km, 'profile')}
+                onCheckpointMove={isPhone ? undefined : onCheckpointDrop}
+                dragPreview={mapDrag}
                 highlightRange={highlighted}
                 footer={
                   <SegmentStrip

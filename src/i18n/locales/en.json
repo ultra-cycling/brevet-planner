@@ -58,7 +58,7 @@
   },
   "checkpoints": {
     "title": "Checkpoints",
-    "hint": "Click the track on the map or the elevation profile to add a checkpoint, enter its distance or import the waypoints of the GPX file.",
+    "hint": "Click the track on the map or the elevation profile to add a checkpoint, enter its distance or import the waypoints of the GPX file. Drag a checkpoint on the map or by its number on the profile to move it (Esc cancels).",
     "start": "Start",
     "finish": "Finish",
     "cp": "CP{{number}}",
@@ -109,7 +109,9 @@
       "tooFar_one": "{{count}} waypoint is more than 1 km from the track and was skipped: {{names}}.",
       "tooFar_other": "{{count}} waypoints are more than 1 km from the track and were skipped: {{names}}."
     },
-    "segmentElevation": "climb {{climb}}, descent {{descent}}"
+    "segmentElevation": "climb {{climb}}, descent {{descent}}",
+    "moved": "{{from}} moved to {{km}} – now {{control}}",
+    "moveTooClose": "Too close to {{control}} – checkpoints must be at least 100 m apart."
   },
   "controls": {
     "rules": {

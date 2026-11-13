@@ -1,4 +1,4 @@
-import { useMemo, useRef, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { elevationAxis, profileAreaPath, sampleProfile, ticks } from '../../domain/track/profile';
 import { nearestPointIndex, type Track } from '../../domain/track/track';
@@ -16,6 +16,13 @@ export interface ElevationProfileProps {
   checkpoints?: readonly { id: string; distanceKm: number; label: string; tag: string }[];
   /** Click or Enter on a position, e.g. to add a checkpoint there */
   onPick?: (distanceKm: number) => void;
+  /**
+   * Drag and drop of a checkpoint line by its number (US9). Called with the distance on drop; return `false` to reject
+   * the move. Without it the lines can't be dragged.
+   */
+  onCheckpointMove?: (id: string, distanceKm: number) => boolean;
+  /** Distance of a checkpoint being dragged elsewhere (e.g. on the map) – shown as a moving line */
+  dragPreview?: { id: string; distanceKm: number } | null;
   /** Range to emphasise, e.g. the hovered segment */
   highlightRange?: { startKm: number; endKm: number } | null;
   /** Rendered below the distance axis, aligned with the plot (e.g. the segment strip) */
@@ -28,12 +35,28 @@ export function ElevationProfile({
   onActiveIndexChange,
   checkpoints = [],
   onPick,
+  onCheckpointMove,
+  dragPreview,
   highlightRange,
   footer,
 }: ElevationProfileProps) {
   const { t } = useTranslation();
   const format = useFormat();
   const plotRef = useRef<HTMLDivElement>(null);
+  // checkpoint being dragged on the profile
+  // `offsetKm`: where the handle was grabbed relative to the line – kept while dragging, so the line doesn't jump
+  const [drag, setDrag] = useState<{ id: string; distanceKm: number; pointerId: number; offsetKm: number } | null>(null);
+  const dragging = drag !== null;
+
+  // Escape cancels the drag
+  useEffect(() => {
+    if (!dragging) return;
+    const onKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') setDrag(null);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [dragging]);
 
   const hasElevation = track.minEleM !== null && track.maxEleM !== null;
   const axis = useMemo(() => elevationAxis(track.minEleM ?? 0, track.maxEleM ?? 0), [track]);
@@ -55,11 +78,12 @@ export function ElevationProfile({
   const active = activeIndex !== null ? track.points[activeIndex] : null;
   const pct = (km: number) => (track.distanceKm > 0 ? (km / track.distanceKm) * 100 : 0);
 
-  const indexAt = (clientX: number) => {
+  /** Distance under the pointer (not snapped to a track point) */
+  const kmAt = (clientX: number) => {
     const rect = plotRef.current!.getBoundingClientRect();
-    const fraction = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-    return nearestPointIndex(track.points, fraction * track.distanceKm);
+    return Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)) * track.distanceKm;
   };
+  const indexAt = (clientX: number) => nearestPointIndex(track.points, kmAt(clientX));
 
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => onActiveIndexChange(indexAt(e.clientX));
 
@@ -136,17 +160,60 @@ export function ElevationProfile({
                 data-testid="profile-range"
               />
             )}
-            {checkpoints.map((cp) => (
-              <div
-                key={cp.id}
-                className="profile-checkpoint"
-                style={{ left: `${pct(cp.distanceKm)}%` }}
-                title={cp.label}
-                data-testid="profile-checkpoint"
-              >
-                <span>{cp.tag}</span>
-              </div>
-            ))}
+            {checkpoints.map((cp) => {
+              const moving = drag?.id === cp.id ? drag : dragPreview?.id === cp.id ? dragPreview : null;
+              return (
+                <div
+                  key={cp.id}
+                  className={`profile-checkpoint${moving ? ' is-dragging' : ''}`}
+                  style={{ left: `${pct(moving?.distanceKm ?? cp.distanceKm)}%` }}
+                  title={cp.label}
+                  data-testid="profile-checkpoint"
+                >
+                  <span
+                    className={onCheckpointMove ? 'is-draggable' : undefined}
+                    data-testid="profile-checkpoint-handle"
+                    onPointerDown={
+                      onCheckpointMove
+                        ? (e) => {
+                            e.stopPropagation();
+                            e.currentTarget.setPointerCapture?.(e.pointerId);
+                            setDrag({
+                              id: cp.id,
+                              distanceKm: cp.distanceKm,
+                              pointerId: e.pointerId,
+                              offsetKm: kmAt(e.clientX) - cp.distanceKm,
+                            });
+                          }
+                        : undefined
+                    }
+                    onPointerMove={
+                      onCheckpointMove
+                        ? (e) => {
+                            if (drag?.id !== cp.id || drag.pointerId !== e.pointerId) return;
+                            const km = kmAt(e.clientX) - drag.offsetKm;
+                            setDrag({ ...drag, distanceKm: Math.min(track.distanceKm, Math.max(0, km)) });
+                          }
+                        : undefined
+                    }
+                    onPointerUp={
+                      onCheckpointMove
+                        ? (e) => {
+                            if (drag?.id !== cp.id || drag.pointerId !== e.pointerId) return;
+                            setDrag(null);
+                            if (drag.distanceKm !== cp.distanceKm) onCheckpointMove(cp.id, drag.distanceKm);
+                          }
+                        : undefined
+                    }
+                    onPointerCancel={() => setDrag(null)}
+                    // a drop must not count as a click on the profile (that would add a checkpoint)
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {cp.tag}
+                  </span>
+                </div>
+              );
+            })}
             {active && <div className="profile-cursor" style={{ left: `${pct(active.distanceKm)}%` }} data-testid="profile-cursor" />}
           </div>
           <div className="profile-x-axis small text-body-secondary tabular-nums" aria-hidden="true">

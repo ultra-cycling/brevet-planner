@@ -7,7 +7,6 @@ import { arrivalStatus } from '../../domain/status';
 import { formatElapsed } from '../../domain/time/duration';
 import type { EstimatorParamDef, EstimatorParams, TimeEstimator } from '../../domain/time/TimeEstimator';
 import type { Timetable, TimetableRow } from '../../domain/timetable';
-import { positionAtDistance } from '../../domain/track/snap';
 import type { Track } from '../../domain/track/track';
 import { useFormat } from '../../i18n/useFormat';
 import { RemoveIcon, ResetIcon } from '../icons';
@@ -23,6 +22,8 @@ export interface CheckpointPanelProps {
   dispatch: Dispatch<CheckpointAction>;
   /** Adds an intermediate control; returns false if there already is one at that distance */
   onAdd: (distanceKm: number) => boolean;
+  /** Moves an intermediate control; returns an error message if it can't be placed there */
+  onMove: (id: string, distanceKm: number) => string | null;
   /** Timetable of the controls; each row also shows the segment that ends at its control */
   timetable: Timetable;
   estimator: TimeEstimator;
@@ -49,6 +50,7 @@ export function CheckpointPanel({
   rules,
   dispatch,
   onAdd,
+  onMove,
   timetable,
   estimator,
   planParams,
@@ -323,8 +325,7 @@ export function CheckpointPanel({
                             const km = parseNumber(text);
                             const error = kmError(km);
                             if (error) return error;
-                            dispatch({ type: 'move', id: cp.id, position: positionAtDistance(track, km!) });
-                            return null;
+                            return onMove(cp.id, km!);
                           }}
                         />
                       ) : (

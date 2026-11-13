@@ -4,6 +4,7 @@ import {
   controlRows,
   importWaypoints,
   initialCheckpointState,
+  moveConflict,
   type CheckpointState,
 } from './checkpoints';
 import { acpControlRules } from './controls/acp';
@@ -114,5 +115,35 @@ describe('importWaypoints', () => {
       items: first.items.map((item, i) => ({ ...item, id: `w${i}`, source: 'waypoint' })),
     });
     expect(importWaypoints(track, state.checkpoints).items).toEqual([]);
+  });
+});
+
+describe('moving a checkpoint (US9)', () => {
+  it('keeps name, rest and overrides, takes the rule window of the new place and renumbers', () => {
+    let state = withControls(50, 100);
+    state = checkpointReducer(state, { type: 'rename', id: 'cp0', name: 'Café' });
+    state = checkpointReducer(state, { type: 'setRest', id: 'cp0', restMin: 30 });
+    state = checkpointReducer(state, { type: 'setWindow', id: 'cp0', closeOverrideMin: 600 });
+    state = checkpointReducer(state, { type: 'move', id: 'cp0', position: at(150) }); // passes cp1
+
+    const rows = controlRows(state, acpControlRules);
+    expect(rows.map((r) => [r.checkpoint.id, r.number])).toEqual([
+      ['start', null],
+      ['cp1', 1],
+      ['cp0', 2],
+      ['finish', null],
+    ]);
+    const moved = rows[2];
+    expect(moved.checkpoint).toMatchObject({ name: 'Café', restMin: 30, closeOverrideMin: 600, distanceKm: 150 });
+    expect(moved.window.openMin).toBe(acpControlRules.window(150, 'control', 200).openMin);
+  });
+
+  it('is blocked within 100 m of another checkpoint, the start or the finish – but not by itself', () => {
+    const { checkpoints } = withControls(50, 100);
+    expect(moveConflict(checkpoints, 'cp0', 100.05)?.id).toBe('cp1');
+    expect(moveConflict(checkpoints, 'cp0', 0.05)?.id).toBe('start');
+    expect(moveConflict(checkpoints, 'cp0', 209.95)?.id).toBe('finish');
+    expect(moveConflict(checkpoints, 'cp0', 50.05)).toBeUndefined();
+    expect(moveConflict(checkpoints, 'cp0', 100.2)).toBeUndefined();
   });
 });

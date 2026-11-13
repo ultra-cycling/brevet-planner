@@ -8,8 +8,32 @@ import { localDate } from '../../domain/time/clock';
 
 // Leaflet needs a real layout engine – the stub lists the markers and simulates a click on the track.
 vi.mock('../track/TrackMap', () => ({
-  TrackMap: ({ checkpoints = [], onTrackClick, onCheckpointClick, highlightPath, overlayLines, children }: TrackMapProps) => (
+  TrackMap: ({
+    checkpoints = [],
+    onTrackClick,
+    onCheckpointClick,
+    onCheckpointMove,
+    highlightPath,
+    overlayLines,
+    children,
+  }: TrackMapProps) => (
     <div data-testid="track-map" data-highlight-points={highlightPath?.length}>
+      {/* simulated drag and drop of a marker: "drop CP1 at km 150" */}
+      {onCheckpointMove && (
+        <form
+          aria-label="drop marker"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const data = new FormData(e.currentTarget);
+            const cp = checkpoints.find((c) => c.number === Number(data.get('number')))!;
+            e.currentTarget.dataset.accepted = String(onCheckpointMove(cp.id, Number(data.get('km'))));
+          }}
+        >
+          <input name="number" aria-label="marker number" />
+          <input name="km" aria-label="drop at km" />
+          <button type="submit">drop marker</button>
+        </form>
+      )}
       {children}
       {overlayLines?.map((line) => (
         <span key={line.key} data-testid="overlay-line" data-points={line.positions.length} style={{ color: line.color }}>
@@ -576,5 +600,70 @@ describe('Console', () => {
       errors.mockRestore();
       warnings.mockRestore();
     }
+  });
+});
+
+describe('Move checkpoints (US9)', () => {
+  const dropMarker = async (number: number, km: number) => {
+    await userEvent.clear(screen.getByLabelText('marker number'));
+    await userEvent.type(screen.getByLabelText('marker number'), String(number));
+    await userEvent.clear(screen.getByLabelText('drop at km'));
+    await userEvent.type(screen.getByLabelText('drop at km'), String(km));
+    await userEvent.click(screen.getByRole('button', { name: 'drop marker' }));
+    return screen.getByRole('form', { name: 'drop marker' }).dataset.accepted === 'true';
+  };
+
+  it('moves a marker dropped on the map: distance, window and timetable follow, name and rest stay', async () => {
+    await renderWithTrack();
+    await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '100{Enter}');
+    await userEvent.type(screen.getByLabelText('Name of CP1'), 'Café{Enter}');
+    const rest = screen.getByLabelText('Rest at CP1 Café in minutes');
+    await userEvent.clear(rest);
+    await userEvent.type(rest, '40{Enter}');
+
+    expect(await dropMarker(1, 60)).toBe(true);
+    expect(table()[1]).toEqual(['CP1', 'Café', '60.0', '1:46', '4:00']); // ACP window of km 60
+    expect(screen.getByLabelText('Rest at CP1 Café in minutes')).toHaveValue('40');
+    expect(screen.getAllByTestId('checkpoint-row')[1].querySelector('[data-testid="arrival"]')).toHaveTextContent('2:14'); // 60 km at 28 km/h + 60 m at 700 m/h
+    expect(screen.getByTestId('announcement')).toHaveTextContent('CP1 Café moved to 60.0 km – now CP1');
+  });
+
+  it('renumbers the checkpoints when one is moved past another', async () => {
+    await renderWithTrack();
+    await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '50{Enter}');
+    await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '100{Enter}');
+    await userEvent.type(screen.getByLabelText('Name of CP1'), 'First{Enter}');
+
+    expect(await dropMarker(1, 150)).toBe(true);
+    expect(table().map((row) => row.slice(0, 3))).toEqual([
+      ['Start', '', '0.0'],
+      ['CP1', '', '100.0'],
+      ['CP2', 'First', '150.0'],
+      ['Finish', '', '210.0'],
+    ]);
+    expect(screen.getByTestId('announcement')).toHaveTextContent('CP1 First moved to 150.0 km – now CP2');
+  });
+
+  it('keeps the checkpoint in place when it is dropped within 100 m of another one', async () => {
+    await renderWithTrack();
+    await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '50{Enter}');
+    await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '100{Enter}');
+
+    expect(await dropMarker(1, 100.05)).toBe(false);
+    expect(table()[1][2]).toBe('50.0');
+    expect(screen.getByTestId('announcement')).toHaveTextContent(
+      'Too close to CP2 – checkpoints must be at least 100 m apart.',
+    );
+    expect(await dropMarker(2, 209.95)).toBe(false); // the finish counts as well
+  });
+
+  it('applies the same rule to the distance entered in the table', async () => {
+    await renderWithTrack();
+    await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '50{Enter}');
+    await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '100{Enter}');
+    const km = screen.getByLabelText('Distance of CP1 in km');
+    await userEvent.clear(km);
+    await userEvent.type(km, '100{Enter}');
+    expect(km).toHaveAccessibleDescription('Too close to CP2 – checkpoints must be at least 100 m apart.');
   });
 });

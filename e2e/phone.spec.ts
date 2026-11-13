@@ -70,6 +70,10 @@ test.describe('Phone layout – map, elevation profile and timetable, read-only'
     await expect(cp1).toContainText(/Control window\s*\d\d:\d\d – \d\d:\d\d/);
     await expect(cp1).toContainText(/Rest\s*15 min/);
     await expect(page.getByTestId('phone-summary')).toContainText('start 06:00');
+    // read-only: the checkpoints can't be dragged
+    await expect(page.locator('.checkpoint-marker')).toHaveCount(3);
+    await expect(page.locator('.leaflet-marker-draggable')).toHaveCount(0);
+    await expect(page.locator('.profile-checkpoint .is-draggable')).toHaveCount(0);
 
     // the map re-fits the track to its new size (whole zoom levels: the track fills half to all of the map)
     await expect

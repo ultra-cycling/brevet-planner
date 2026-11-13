@@ -31,7 +31,7 @@ verify them. Iterations and architecture: [plan.md](plan.md).
 | US6 | [Provide start time for each event](features/us06-start-time.md)                                 | calculate the timetable from a start time                     | ✅ Done    |
 | US7 | [Overlay for route in map](features/us07-route-overlays.md)                                      | colour the route by e.g. road gradient or daylight            | ✅ Done    |
 | US8 | [Show trackpoint tooltip](features/us08-trackpoint-tooltip.md)                                   | see distance and expected times when hovering the route       | Planned   |
-| US9 | [Move existing checkpoints](features/us09-move-checkpoints.md)                                   | drag checkpoints along the track on the map and the profile   | Planned   |
+| US9 | [Move existing checkpoints](features/us09-move-checkpoints.md)                                   | drag checkpoints along the track on the map and the profile   | ✅ Done  |
 | US5 | [Allow storing multiple route plans](features/us05-multiple-route-plans.md)                      | store several plans and switch between them                   | Postponed |
 
 ## Cross-functional Requirements

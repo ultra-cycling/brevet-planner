@@ -191,6 +191,17 @@ export function findCheckpointNear(
   return checkpoints.find((cp) => Math.abs(cp.distanceKm - distanceKm) < toleranceKm);
 }
 
+/**
+ * Checkpoint that blocks moving checkpoint `id` to `distanceKm` (another checkpoint, start or finish within 100 m);
+ * `undefined` if the move is possible. Passing other checkpoints is allowed – the controls are renumbered.
+ */
+export function moveConflict(checkpoints: readonly Checkpoint[], id: string, distanceKm: number): Checkpoint | undefined {
+  return findCheckpointNear(
+    checkpoints.filter((cp) => cp.id !== id),
+    distanceKm,
+  );
+}
+
 /** Waypoints further away from the track than this are not imported */
 export const MAX_WAYPOINT_OFF_TRACK_KM = 1;
 /** A waypoint this close to an existing checkpoint counts as already imported */
