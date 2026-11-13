@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { AppServicesProvider, type AppServices } from '../app/AppServices';
 import { defaultConfig, type AppConfig } from '../config/schema';
+import { createDefaultOverlayRegistry } from '../domain/overlays/registry';
 import { createDefaultEstimatorRegistry } from '../domain/time/registry';
 import { initI18n } from '../i18n';
 import { LocalStoragePlanRepository } from '../storage/LocalStoragePlanRepository';
@@ -13,6 +14,7 @@ export async function renderWithServices(ui: ReactElement, overrides: Partial<Ap
   const services: AppServices = {
     config,
     estimators: createDefaultEstimatorRegistry(),
+    overlays: createDefaultOverlayRegistry(),
     planRepository: new LocalStoragePlanRepository(localStorage, 'test'),
     ...overrides,
   };

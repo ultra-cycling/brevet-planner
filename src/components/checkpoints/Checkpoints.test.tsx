@@ -8,8 +8,14 @@ import { localDate } from '../../domain/time/clock';
 
 // Leaflet needs a real layout engine – the stub lists the markers and simulates a click on the track.
 vi.mock('../track/TrackMap', () => ({
-  TrackMap: ({ checkpoints = [], onTrackClick, onCheckpointClick, highlightPath }: TrackMapProps) => (
+  TrackMap: ({ checkpoints = [], onTrackClick, onCheckpointClick, highlightPath, overlayLines, children }: TrackMapProps) => (
     <div data-testid="track-map" data-highlight-points={highlightPath?.length}>
+      {children}
+      {overlayLines?.map((line) => (
+        <span key={line.key} data-testid="overlay-line" data-points={line.positions.length} style={{ color: line.color }}>
+          {line.classKey}
+        </span>
+      ))}
       <button type="button" onClick={() => onTrackClick?.(45 + 30 * DEG_PER_KM, 7.001)}>
         click track at km 30
       </button>
@@ -433,5 +439,61 @@ describe('Start time (US6)', () => {
     expect(rows()[1]).toHaveClass('is-late');
     expect(rows()[1].querySelector('[data-testid="status"]')).toHaveAttribute('title', 'Arrival after the control closes');
     expect(rows()[1].querySelector('[data-testid="status"] svg')).toBeInTheDocument();
+  });
+});
+
+describe('Route overlays (US7)', () => {
+  const legend = () =>
+    screen.getAllByTestId('legend-item').map((item) => item.textContent!.replace(/\s+/g, ' ').trim());
+  const lineClasses = () => screen.queryAllByTestId('overlay-line').map((line) => line.textContent);
+
+  it('shows the plain route until an overlay is selected', async () => {
+    await renderWithTrack({ times: 'clock' });
+    expect(screen.getByLabelText('Colour the route by')).toHaveDisplayValue('Nothing (plain route)');
+    expect(lineClasses()).toEqual([]);
+    expect(screen.queryByTestId('legend-item')).not.toBeInTheDocument();
+  });
+
+  it('colours the route by road gradient, with a legend that names every colour', async () => {
+    await renderWithTrack({ times: 'clock' });
+    await userEvent.selectOptions(screen.getByLabelText('Colour the route by'), 'Road gradient');
+    expect(screen.getByRole('list', { name: 'Legend: Road gradient' })).toBeInTheDocument();
+    // the test track climbs 1 m per km: flat all the way
+    expect(legend()).toEqual([
+      'Descent (below −2 %): 0.0 km',
+      'Flat (−2 to 2 %): 210.0 km',
+      'Moderate (2 to 5 %): 0.0 km',
+      'Steep (5 to 8 %): 0.0 km',
+      'Very steep (8 % and more): 0.0 km',
+    ]);
+    expect(lineClasses()).toEqual(['flat']);
+    expect(screen.getByTestId('overlay-line')).toHaveAttribute('data-points', '211');
+  });
+
+  it('colours the route by daylight from the timetable, the start and the time zone', async () => {
+    await renderWithTrack({ times: 'clock' });
+    await userEvent.selectOptions(screen.getByLabelText('Time zone'), 'UTC');
+    fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '2026-06-21' } });
+    const startTime = screen.getByLabelText('Start time');
+    await userEvent.clear(startTime);
+    await userEvent.type(startTime, '15:00{Enter}');
+    await userEvent.selectOptions(screen.getByLabelText('Colour the route by'), 'Daylight');
+
+    // 15:00–22:48 UTC at 45–47° N, 7° E: sunset around 19:15 UTC
+    expect(lineClasses()).toEqual(['day', 'twilight', 'night']);
+    expect(screen.getByText(/Start time zone: UTC\./)).toBeInTheDocument();
+    const km = legend().map((item) => Number(item.match(/([\d.]+) km$/)![1]));
+    expect(km.reduce((a, b) => a + b)).toBeCloseTo(210, 0);
+
+    // an earlier start: the whole ride by day
+    await userEvent.clear(startTime);
+    await userEvent.type(startTime, '06:00{Enter}');
+    expect(lineClasses()).toEqual(['day']);
+
+    // a slower pace moves the evening onto the route again
+    const speed = screen.getByLabelText('Speed (km/h)');
+    await userEvent.clear(speed);
+    await userEvent.type(speed, '12{Enter}');
+    expect(lineClasses()).toEqual(['day', 'twilight', 'night']);
   });
 });

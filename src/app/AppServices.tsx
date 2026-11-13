@@ -1,5 +1,6 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import type { AppConfig } from '../config/schema';
+import type { OverlayRegistry } from '../domain/overlays/registry';
 import type { EstimatorRegistry } from '../domain/time/registry';
 import type { PlanRepository } from '../storage/PlanRepository';
 
@@ -8,6 +9,7 @@ export interface AppServices {
   config: AppConfig;
   planRepository: PlanRepository;
   estimators: EstimatorRegistry;
+  overlays: OverlayRegistry;
 }
 
 const AppServicesContext = createContext<AppServices | null>(null);

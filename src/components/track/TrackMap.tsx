@@ -1,7 +1,7 @@
 import 'leaflet/dist/leaflet.css';
 
 import { divIcon, type DivIcon } from 'leaflet';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet';
 import { useTranslation } from 'react-i18next';
 import { useConfig } from '../../app/AppServices';
@@ -14,11 +14,16 @@ const SEGMENT = '#7C2D12'; // darker route colour for the highlighted segment
 /** Start and finish closer than this are shown as one marker (loop) */
 const SAME_PLACE_KM = 0.05;
 
-function FitToTrack({ track }: { track: Track }) {
+/** Space kept free on the right for the overlay panel (US7) – at most 40 % of a narrow map */
+const PANEL_SPACE_PX = 264;
+
+function FitToTrack({ track, reservePanel }: { track: Track; reservePanel: boolean }) {
   const map = useMap();
   useEffect(() => {
-    map.fitBounds(track.bounds, { padding: [24, 24] });
-  }, [map, track]);
+    const right = reservePanel ? Math.min(PANEL_SPACE_PX, map.getSize().x * 0.4) : 24;
+    // without animation: the initial view (MapContainer bounds) differs only by the padding
+    map.fitBounds(track.bounds, { paddingTopLeft: [24, 24], paddingBottomRight: [right, 24], animate: false });
+  }, [map, track, reservePanel]);
   return null;
 }
 
@@ -42,6 +47,17 @@ export interface TrackMapProps {
   onCheckpointClick?: (id: string) => void;
   /** Part of the track to emphasise, e.g. the hovered segment */
   highlightPath?: readonly [number, number][] | null;
+  /** Route coloured by an overlay (US7): one line per run of equal class */
+  overlayLines?: readonly OverlayLine[] | null;
+  /** Shown on top of the map, e.g. the overlay selection and legend */
+  children?: ReactNode;
+}
+
+export interface OverlayLine {
+  key: string;
+  classKey: string;
+  color: string;
+  positions: [number, number][];
 }
 
 // one icon per number: a new icon object on every render would make Leaflet replace the marker element
@@ -68,6 +84,8 @@ export function TrackMap({
   onTrackClick,
   onCheckpointClick,
   highlightPath,
+  overlayLines,
+  children,
 }: TrackMapProps) {
   const { t } = useTranslation();
   const { map } = useConfig();
@@ -80,10 +98,19 @@ export function TrackMap({
     <div className="track-map" role="region" aria-label={t('map.label')}>
       <MapContainer bounds={track.bounds} boundsOptions={{ padding: [24, 24] }} scrollWheelZoom className="h-100">
         <TileLayer url={map.tileUrl} subdomains={map.subdomains} maxZoom={map.maxZoom} attribution={map.attribution} />
-        <FitToTrack track={track} />
+        <FitToTrack track={track} reservePanel={children !== undefined} />
         {/* white casing below the route keeps it readable on any map background */}
         <Polyline positions={positions} pathOptions={{ color: '#FFFFFF', weight: 8, opacity: 0.9 }} interactive={false} />
         <Polyline positions={positions} pathOptions={{ color: ROUTE, weight: 4 }} className="track-line" interactive={false} />
+        {overlayLines?.map((line) => (
+          <Polyline
+            key={line.key}
+            positions={line.positions}
+            pathOptions={{ color: line.color, weight: 5, opacity: 1 }}
+            className={`overlay-run overlay-${line.classKey}`}
+            interactive={false}
+          />
+        ))}
         {highlightPath && (
           <Polyline
             positions={highlightPath as [number, number][]}
@@ -144,6 +171,7 @@ export function TrackMap({
           />
         )}
       </MapContainer>
+      {children}
     </div>
   );
 }

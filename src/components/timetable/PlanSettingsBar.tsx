@@ -2,6 +2,7 @@ import { Form, ToggleButton, ToggleButtonGroup } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { useAppServices } from '../../app/AppServices';
 import { isValidDate, normalizeTimeOfDay, type RideStart } from '../../domain/time/clock';
+import { availableTimeZones } from '../../domain/time/timeZone';
 import { formatElapsed } from '../../domain/time/duration';
 import type { EstimatorParams, TimeEstimator } from '../../domain/time/TimeEstimator';
 import type { TimetableTotals } from '../../domain/timetable';
@@ -11,6 +12,9 @@ import type { TimeDisplay, TimeFormat } from './useTimeFormat';
 export interface PlanSettingsBarProps {
   start: RideStart;
   onStartChange: (start: RideStart) => void;
+  /** IANA time zone of the start – needed to compare the times with sunrise and sunset (US7) */
+  timeZone: string;
+  onTimeZoneChange: (zone: string) => void;
   times: TimeFormat;
   onTimeDisplayChange: (mode: TimeDisplay) => void;
   /** Arrivals with less time left until the control closes are "tight" */
@@ -33,6 +37,8 @@ const MAX_TIGHT_BUFFER_MIN = 24 * 60;
 export function PlanSettingsBar({
   start,
   onStartChange,
+  timeZone,
+  onTimeZoneChange,
   times,
   onTimeDisplayChange,
   tightBufferMin,
@@ -95,6 +101,16 @@ export function PlanSettingsBar({
               return null;
             }}
           />
+        </Form.Group>
+        <Form.Group controlId="time-zone" className="plan-zone">
+          <Form.Label className="small text-body-secondary mb-1">{t('timetable.settings.timeZone')}</Form.Label>
+          <Form.Select size="sm" value={timeZone} onChange={(e) => onTimeZoneChange(e.target.value)}>
+            {availableTimeZones(timeZone).map((zone) => (
+              <option key={zone} value={zone}>
+                {zone.replaceAll('_', ' ')}
+              </option>
+            ))}
+          </Form.Select>
         </Form.Group>
         <div>
           <div id="time-display-label" className="form-label small text-body-secondary mb-1">

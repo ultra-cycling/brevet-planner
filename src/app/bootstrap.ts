@@ -1,6 +1,7 @@
 import type { i18n as I18n } from 'i18next';
 import { loadConfig } from '../config/loadConfig';
 import { ConfigError, type AppConfig } from '../config/schema';
+import { createDefaultOverlayRegistry } from '../domain/overlays/registry';
 import { createDefaultEstimatorRegistry } from '../domain/time/registry';
 import { resolveParams } from '../domain/time/TimeEstimator';
 import { initI18n } from '../i18n';
@@ -38,7 +39,12 @@ export async function startApp(load: () => Promise<AppConfig> = () => loadConfig
   validateTimeModel(config, { estimators });
   const i18n = await initI18n(config.i18n);
   return {
-    services: { config, estimators, planRepository: createPlanRepository(config.storage) },
+    services: {
+      config,
+      estimators,
+      overlays: createDefaultOverlayRegistry(),
+      planRepository: createPlanRepository(config.storage),
+    },
     i18n,
   };
 }

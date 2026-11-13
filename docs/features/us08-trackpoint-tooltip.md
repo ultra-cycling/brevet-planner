@@ -2,7 +2,7 @@
 
 | Status  | Iteration                  | Persona               |
 |---------|----------------------------|-----------------------|
-| Planned | [8](../plan.md#iterations) | Long-distance cyclist |
+| Planned | [9](../plan.md#iterations) | Long-distance cyclist |
 
 As a long distance cyclist
 I want to render a tooltip menu that shows whenever I hover the route track in the map

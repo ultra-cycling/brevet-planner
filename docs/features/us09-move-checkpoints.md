@@ -2,7 +2,7 @@
 
 | Status  | Iteration                  | Persona               |
 |---------|----------------------------|-----------------------|
-| Planned | [7](../plan.md#iterations) | Long-distance cyclist |
+| Planned | [8](../plan.md#iterations) | Long-distance cyclist |
 
 As a long distance cyclist
 I want to move existing tooltips along the track

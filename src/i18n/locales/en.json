@@ -151,7 +151,8 @@
         "elapsed": "Since start"
       },
       "tightBuffer": "Tight below (min)",
-      "invalidTightBuffer": "Enter whole minutes between 0 and {{max}}"
+      "invalidTightBuffer": "Enter whole minutes between 0 and {{max}}",
+      "timeZone": "Time zone"
     },
     "totals": {
       "ride": "Riding",
@@ -172,6 +173,31 @@
       "tightHint": "Little time left until the control closes",
       "earlyHint": "Arrival before the control opens – you have to wait",
       "lateHint": "Arrival after the control closes"
+    }
+  },
+  "overlays": {
+    "label": "Colour the route by",
+    "none": "Nothing (plain route)",
+    "legend": "Legend: {{name}}",
+    "gradient": {
+      "name": "Road gradient",
+      "classes": {
+        "descent": "Descent (below −2 %)",
+        "flat": "Flat (−2 to 2 %)",
+        "moderate": "Moderate (2 to 5 %)",
+        "steep": "Steep (5 to 8 %)",
+        "verySteep": "Very steep (8 % and more)"
+      },
+      "unavailable": "The track has no elevation data, so the gradient can't be shown."
+    },
+    "daylight": {
+      "name": "Daylight",
+      "classes": {
+        "day": "Day",
+        "twilight": "Dawn / dusk (civil twilight)",
+        "night": "Night"
+      },
+      "note": "When you are expected there according to the timetable, compared with sunrise and sunset at that place. Start time zone: {{zone}}."
     }
   }
 }

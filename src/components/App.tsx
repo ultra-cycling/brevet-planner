@@ -10,7 +10,10 @@ import {
 } from '../domain/checkpoints';
 import { acpControlRules } from '../domain/controls/acp';
 import { buildSegments } from '../domain/segments';
+import { distanceByClass } from '../domain/overlays/RouteOverlay';
+import { minutesAlongTrack } from '../domain/timeAlongTrack';
 import { localDate, type RideStart } from '../domain/time/clock';
+import { browserTimeZone, startInstantUtc } from '../domain/time/timeZone';
 import { resolveParams, type EstimatorParams } from '../domain/time/TimeEstimator';
 import { buildTimetable } from '../domain/timetable';
 import { positionAtDistance, snapToTrack, trackSlice } from '../domain/track/snap';
@@ -25,7 +28,8 @@ import { PlanSettingsBar } from './timetable/PlanSettingsBar';
 import { useTimeFormat, type TimeDisplay } from './timetable/useTimeFormat';
 import { ElevationProfile } from './track/ElevationProfile';
 import { GpxDropZone } from './track/GpxDropZone';
-import { TrackMap } from './track/TrackMap';
+import { RouteOverlayPanel } from './track/RouteOverlayPanel';
+import { TrackMap, type OverlayLine } from './track/TrackMap';
 import { TrackSummary } from './track/TrackSummary';
 import { useGpxImport } from './track/useGpxImport';
 
@@ -41,7 +45,7 @@ export function App() {
   const [checkpointState, dispatch] = useReducer(checkpointReducer, emptyCheckpointState);
   const [announcement, setAnnouncement] = useState('');
   const [activeSegment, setActiveSegment] = useState<number | null>(null);
-  const { config, estimators } = useAppServices();
+  const { config, estimators, overlays } = useAppServices();
   // plan-wide time model (defaults from config.yaml) – persisted with the plan in US5
   const [timeModel, setTimeModel] = useState(() => {
     const { id, params } = config.planning.timeModel;
@@ -53,6 +57,9 @@ export function App() {
   const [start, setStart] = useState<RideStart>(() => ({ date: localDate(), time: config.planning.defaultStartTime }));
   const [tightBufferMin, setTightBufferMin] = useState(config.planning.tightBufferMinutes);
   const [timeDisplay, setTimeDisplay] = useState<TimeDisplay>('clock');
+  const [timeZone, setTimeZone] = useState(browserTimeZone);
+  const [overlayId, setOverlayId] = useState<string | null>(null);
+  const overlay = (overlayId && overlays.get(overlayId)) || null;
 
   const onTrack = useCallback((next: Track) => {
     setTrack(next);
@@ -90,6 +97,24 @@ export function App() {
       rideMin: timetable.rows[segment.index + 1].rideMin ?? 0,
     }));
   }, [segments, rows, timetable, t]);
+  // route overlay (US7): classes along the track, drawn as one line per run
+  const overlayResult = useMemo(() => {
+    if (!track || !overlay) return null;
+    const runs = overlay.classify({
+      track,
+      minutesAt: minutesAlongTrack(track, timetable, estimator),
+      startUtcMs: startInstantUtc(start, timeZone),
+    });
+    if (!runs) return { lines: null, distances: null };
+    const colors = new Map(overlay.classes.map((c) => [c.key, c.color]));
+    const lines: OverlayLine[] = runs.map((run) => ({
+      key: `${run.from}-${run.classKey}`,
+      classKey: run.classKey,
+      color: colors.get(run.classKey)!,
+      positions: track.points.slice(run.from, run.to + 1).map((p) => [p.lat, p.lon] as [number, number]),
+    }));
+    return { lines, distances: distanceByClass(track, runs) };
+  }, [track, overlay, timetable, estimator, start, timeZone]);
   // a removed checkpoint may leave the highlight pointing past the last segment
   const highlighted = activeSegment !== null ? (segments[activeSegment] ?? null) : null;
   const highlightPath = useMemo(
@@ -146,6 +171,8 @@ export function App() {
             <PlanSettingsBar
               start={start}
               onStartChange={setStart}
+              timeZone={timeZone}
+              onTimeZoneChange={setTimeZone}
               times={times}
               onTimeDisplayChange={setTimeDisplay}
               tightBufferMin={tightBufferMin}
@@ -193,7 +220,15 @@ export function App() {
               onTrackClick={(lat, lon) => addCheckpoint(snapToTrack(track, lat, lon).distanceKm, 'map')}
               onCheckpointClick={(id) => document.getElementById(`cp-${id}-name`)?.focus()}
               highlightPath={highlightPath}
-            />
+              overlayLines={overlayResult?.lines}
+            >
+              <RouteOverlayPanel
+                overlay={overlay}
+                onChange={setOverlayId}
+                distanceByClass={overlayResult?.distances ?? null}
+                noteValues={{ zone: timeZone.replaceAll('_', ' ') }}
+              />
+            </TrackMap>
             <div className="border-top bg-white">
               <ElevationProfile
                 track={track}

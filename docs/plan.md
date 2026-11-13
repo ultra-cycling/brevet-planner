@@ -23,10 +23,10 @@ stories that aren't built yet are marked *proposed* and are refined at the start
 | 4  | ✅ | [US4 – Ride and rest times](features/us04-ride-and-rest-times.md): speed + climb-rate model, per-segment overrides, rest times, timetable and totals |
 | –  | ✅ | [Planner layout](#layout): plan column scrolling next to a fixed map (cross-cutting, after iteration 4) |
 | 5  | ✅ | [US6 – Start time](features/us06-start-time.md): start date/time, clock times, live recalculation, OK/Tight/Early/Late status |
-| 6  |    | Phone layout – read-only timetable (cross-functional requirement in [design.md](design.md#cross-functional-requirements)) |
-| 7  |    | [US9 – Move checkpoints](features/us09-move-checkpoints.md): drag and drop on map and profile |
-| 8  |    | [US8 – Trackpoint tooltip](features/us08-trackpoint-tooltip.md): distance and expected times when hovering the route |
-| 9  |    | [US7 – Route overlays](features/us07-route-overlays.md): overlay mechanism, road gradient, daylight |
+| 6  | ✅ | [US7 – Route overlays](features/us07-route-overlays.md): overlay mechanism, road gradient, daylight (with time zone of the start) |
+| 7  |    | Phone layout – read-only timetable (cross-functional requirement in [design.md](design.md#cross-functional-requirements)) |
+| 8  |    | [US9 – Move checkpoints](features/us09-move-checkpoints.md): drag and drop on map and profile |
+| 9  |    | [US8 – Trackpoint tooltip](features/us08-trackpoint-tooltip.md): distance and expected times when hovering the route |
 | 10 | Postponed | [US5 – Multiple route plans](features/us05-multiple-route-plans.md): persist plans, plan switcher, create/rename/delete |
 
 US5 (storing plans) is postponed: until then the track and the plan are held in memory and are lost when the page
@@ -41,13 +41,14 @@ Design canvas (proposals A, B, C and the chosen hybrid): <https://claude.ai/arti
 ### Layout
 
 1. **Header** – brand, language selector, *Upload GPX*; plan switcher and *New plan* follow with US5.
-2. **Plan column (left, scrolls on its own)** – track summary; plan settings (start date & time, clock time / since
-   start, tight threshold (US6); time model, speed and climb rate; totals: riding, stops, finish after / at, average
+2. **Plan column (left, scrolls on its own)** – track summary; plan settings (start date & time, time zone (US7),
+   clock time / since start, tight threshold (US6); time model, speed and climb rate; totals: riding, stops, finish after / at, average
    speeds, smallest buffer); the editable timetable with
    one row per control: name, km, segment (distance, ↑climb ↓descent), pace (speed, climb rate), ride time, arrival,
    control window (ACP, editable), rest, departure, buffer with status (US6).
-3. **Map pane (right, fixed)** – CyclOSM map with the track and checkpoint markers filling the remaining space;
-   elevation profile with the segment strip docked below it.
+3. **Map pane (right, fixed)** – CyclOSM map with the track and checkpoint markers filling the remaining space, the
+   route overlay selection and legend (US7) in its top right corner; elevation profile with the segment strip docked
+   below it.
 
 Once a track is loaded the page itself never scrolls – only the plan column does, so the map stays in view while
 working through the timetable. Verified by [layout.spec.ts](../e2e/layout.spec.ts): plan column next to (desktop) or
@@ -60,7 +61,7 @@ the profile fits the map pane, no page scrolling.
 |---------------------|------------------------------------------------------------------------------------|
 | Desktop (≥ 1200 px) | Plan column (50 % of the width, 640–1040 px) left, map pane right                   |
 | Tablet (≥ 768 px)   | Map pane on top (half the height, fixed), plan column below                         |
-| Phone               | Read-only timetable cards (CP, ETA, window, buffer) with a small map (iteration 6) |
+| Phone               | Read-only timetable cards (CP, ETA, window, buffer) with a small map (iteration 7) |
 
 The timetable adapts to the width of the plan column (CSS container queries), not to the viewport. The *Segment*
 column is always shown:
@@ -106,8 +107,9 @@ src/
   domain/      pure TypeScript, no React:
     track/       GPX parsing, track statistics, snapping, elevation profile
     controls/    control rules (ACP)
-    time/        time models (estimators) and their registry, durations, clock times
-    checkpoints.ts, segments.ts, timetable.ts, status.ts
+    time/        time models (estimators) and their registry, durations, clock times, time zones
+    overlays/    route overlays (US7) and their registry
+    checkpoints.ts, segments.ts, timetable.ts, status.ts, timeAlongTrack.ts, sun.ts
   storage/     PlanRepository interface + implementations
   components/  React UI (Bootstrap via react-bootstrap)
 e2e/           Playwright browser tests
@@ -131,6 +133,20 @@ interface TimeEstimator {
 - First implementation `speedClimbEstimator`: `time = distance / speed + climb / climbRate`.
 - Estimators are registered in an `EstimatorRegistry`; a plan stores the estimator id and its parameters (plan values
   + per-segment overrides), so a model trained on past ride recordings can be added later without touching the UI.
+
+### Route overlays
+
+```ts
+interface RouteOverlay {
+  id: string;                          // i18n: overlays.<id>.name / .classes.<key> / .note / .unavailable
+  classes: OverlayClass[];             // key + colour, in legend order
+  classify(context: OverlayContext): OverlayRun[] | null;   // runs of track points with the same class
+}
+// context: track, expected minutes after the start at every track point, real start instant (UTC)
+```
+
+Overlays are registered in the `OverlayRegistry` (an app service, like the time models); the map draws the runs and
+the panel renders selection and legend from this interface only. First overlays: road gradient, daylight.
 
 ### Control rules
 
