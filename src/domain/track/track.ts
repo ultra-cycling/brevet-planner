@@ -1,4 +1,4 @@
-import { ascentDescent, haversineKm } from './geo';
+import { cumulativeAscentDescent, haversineKm } from './geo';
 
 export interface TrackPoint {
   lat: number;
@@ -7,6 +7,9 @@ export interface TrackPoint {
   ele: number | null;
   /** Cumulative distance from the start in km */
   distanceKm: number;
+  /** Cumulative climb and descent from the start in m (5 m hysteresis, see `cumulativeAscentDescent`) */
+  ascentM: number;
+  descentM: number;
 }
 
 /** Named GPS point contained in the GPX file (`<wpt>`) – candidate for checkpoints (US2). */
@@ -49,7 +52,7 @@ export function buildTrack(name: string, raw: readonly RawPoint[], waypoints: Wa
 
   raw.forEach((p, i) => {
     if (i > 0) distanceKm += haversineKm(raw[i - 1].lat, raw[i - 1].lon, p.lat, p.lon);
-    points.push({ lat: p.lat, lon: p.lon, ele: p.ele, distanceKm });
+    points.push({ lat: p.lat, lon: p.lon, ele: p.ele, distanceKm, ascentM: 0, descentM: 0 });
     south = Math.min(south, p.lat);
     north = Math.max(north, p.lat);
     west = Math.min(west, p.lon);
@@ -60,7 +63,12 @@ export function buildTrack(name: string, raw: readonly RawPoint[], waypoints: Wa
     }
   });
 
-  const { ascentM, descentM } = ascentDescent(points.map((p) => p.ele));
+  const cumulative = cumulativeAscentDescent(points.map((p) => p.ele));
+  points.forEach((p, i) => {
+    p.ascentM = cumulative.ascentM[i];
+    p.descentM = cumulative.descentM[i];
+  });
+  const { ascentM, descentM } = points.at(-1)!;
   return {
     name,
     points,

@@ -39,3 +39,30 @@ export function UploadIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+function SmallIcon({ d, ...props }: SVGProps<SVGSVGElement> & { d: string }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d={d} />
+    </svg>
+  );
+}
+
+export const RemoveIcon = (props: SVGProps<SVGSVGElement>) => (
+  <SmallIcon d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6" {...props} />
+);
+
+export const ResetIcon = (props: SVGProps<SVGSVGElement>) => (
+  <SmallIcon d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" {...props} />
+);

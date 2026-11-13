@@ -67,7 +67,14 @@ interface TimeEstimator {
 ### Control rules
 
 Control opening/closing times are pre-filled from the ACP brevet rules (relative to the start time) and can be
-overridden per checkpoint. Rules sit behind an interface so RUSA/PBP/custom rules can follow.
+overridden per checkpoint. Rules sit behind an interface (`src/domain/controls/ControlRules.ts`) so RUSA/PBP/custom
+rules can follow.
+
+ACP rules as implemented (`acp.ts`): opening at the maximum and closing at the minimum speed per distance band
+(0–200 km 15–34 km/h, –400 15–32, –600 15–30, –1000 11.428–28, –1300 13.333–26); start closes after 1 h; controls
+within the first 60 km close at 20 km/h + 1 h; the finish closes at the fixed limit of the nominal distance
+(200: 13:30, 300: 20:00, 400: 27:00, 600: 40:00, 1000: 75:00, 1200: 90:00); distances beyond the nominal distance
+count as the nominal distance; times rounded to the minute.
 
 ### Storage
 
@@ -121,8 +128,8 @@ Every iteration is done when its features are covered by unit tests (Vitest + Te
 |----|--------------------------------------------------------------------------------------------------------------------|
 | 0 ✅ | Scaffold (Vite, React, TypeScript, Bootstrap theme), `config.yaml` loading, i18n (en), storage + estimator interfaces, test setup, GitHub workflows (CI, Pages deploy) |
 | 1 ✅ | **US1** – upload GPX (button or drag & drop), parse track, show it on the CyclOSM map, elevation profile linked to the map |
-| 2  | **US2** – checkpoints: click on map / profile (snap to track), enter km, import GPX waypoints; ACP windows, editable |
-| 3  | **US3** – segments between checkpoints with distance and climb                                                     |
+| 2 ✅ | **US2** – checkpoints: click on map / profile (snap to track), enter km, import GPX waypoints; ACP windows, editable |
+| 3 ✅ | **US3** – segments between checkpoints with distance and climb                                                     |
 | 4  | **US4** – speed + climb-rate estimator, per-segment overrides, rest time per checkpoint, timetable                  |
 | 5  | **US6** – start date/time, live recalculation, status (OK/Tight/Early/Late)                                        |
 | 6  | **US5** – multiple plans, plan switcher, create/rename/delete                                                      |
@@ -134,3 +141,17 @@ Every iteration is done when its features are covered by unit tests (Vitest + Te
   and kept as checkpoint candidates for US2. The loaded track is held in memory only – persisting plans is part of US5.
   Browser tests use the synthetic fixture `e2e/fixtures/sample-loop.gpx` (regenerate with
   `node tooling/generate-sample-gpx.ts`) and stub map tiles.
+- **2 (US2):** Start and finish are always controls; intermediate controls are added by clicking the track on the map
+  (a wide transparent line on top of the route is the click target) or the elevation profile (also Enter on the
+  focused profile), by entering a km value, or by importing the GPX waypoints (snapped to the nearest pass of the
+  track; waypoints more than 1 km away are skipped and listed). A second checkpoint within 100 m of an existing one is
+  rejected. The nominal brevet distance is inferred from the track length (largest distance ≤ track length + 5 %,
+  otherwise "no fixed time limit") and can be changed. Windows are shown as H:MM after the start until the start
+  date/time arrives in iteration 5; overrides are stored per checkpoint and survive moving it. Checkpoints are kept in
+  memory together with the track (persisting comes with US5). Clicking a map marker focuses the checkpoint's name.
+- **3 (US3):** Segments are derived from the ordered controls (start → CP1 → … → finish), never stored. Each track
+  point carries the cumulative climb/descent (same 5 m hysteresis as the totals), so a segment's climb is a difference
+  of two values and the segments add up exactly to the track totals. Segments are shown as a strip below the
+  elevation profile (aligned with its distance axis, also on tablet) and as *Segment km* / *Climb* columns in the
+  table (desktop only). Hovering or focusing a segment – chip or table row – highlights it on the map, the profile
+  and in the table.

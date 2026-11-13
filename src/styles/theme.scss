@@ -141,3 +141,165 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
     }
   }
 }
+
+// ---- Checkpoints (US2) ----
+
+.track-hit {
+  cursor: pointer;
+}
+
+.leaflet-marker-icon.checkpoint-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: $checkpoint;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba($ink, 0.4);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+
+  &:focus-visible {
+    outline: 2px solid $ink;
+    outline-offset: 2px;
+  }
+}
+
+.profile-checkpoint {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 2px dashed $checkpoint;
+  pointer-events: none;
+
+  span {
+    position: absolute;
+    top: 2px;
+    left: 0;
+    transform: translateX(-50%);
+    min-width: 1.25rem;
+    padding: 0 0.25rem;
+    border-radius: 0.625rem;
+    background: $checkpoint;
+    color: #fff;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1.25rem;
+    text-align: center;
+  }
+}
+
+.checkpoint-badge {
+  display: inline-block;
+  min-width: 1.5rem;
+  border-radius: 0.75rem;
+  background: $checkpoint;
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 1.5rem;
+  text-align: center;
+}
+
+.checkpoint-table {
+  caption-side: bottom;
+
+  .name-cell {
+    min-width: 10rem;
+  }
+
+  .km-input {
+    width: 5.5rem;
+    margin-left: auto;
+  }
+
+  .time-input {
+    width: 5.5rem;
+  }
+
+  // edited opening/closing time: marked by a dot and italics, not by color alone
+  .is-overridden .time-input {
+    font-style: italic;
+    border-color: $checkpoint;
+    background-image: radial-gradient(circle, $checkpoint 3px, transparent 3.5px);
+    background-repeat: no-repeat;
+    background-position: right 0.4rem center;
+    background-size: 8px 8px;
+  }
+}
+
+.add-km {
+  width: 7rem;
+}
+
+// ---- Segments (US3) ----
+
+.profile-range {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba($route, 0.14);
+  border-left: 1px solid rgba($route, 0.5);
+  border-right: 1px solid rgba($route, 0.5);
+  pointer-events: none;
+}
+
+.segment-strip {
+  display: flex;
+  margin-top: 0.25rem;
+
+  li {
+    min-width: 0;
+    padding-right: 2px;
+  }
+
+  li:last-child {
+    padding-right: 0;
+  }
+}
+
+.segment-chip {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  padding: 0.25rem 0.375rem;
+  border: 1px solid $line;
+  border-radius: 0.25rem;
+  background: #fff;
+  color: $ink;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover,
+  &.is-active {
+    border-color: $route;
+    background: rgba($route, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $checkpoint;
+    outline-offset: 1px;
+  }
+
+  .segment-climb {
+    color: $body-secondary-color;
+  }
+}
+
+.checkpoint-table {
+  // tablet: segment details are in the strip below the profile (docs/plan.md → responsive behaviour)
+  .segment-col {
+    @include media-breakpoint-down(xl) {
+      display: none;
+    }
+  }
+
+  tr.is-active-segment > * {
+    background-color: rgba($route, 0.06);
+  }
+}

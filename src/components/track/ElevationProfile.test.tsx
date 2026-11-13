@@ -49,6 +49,38 @@ describe('ElevationProfile', () => {
     expect(onChange).toHaveBeenLastCalledWith(null);
   });
 
+  it('picks the clicked position and the cursor position on Enter', async () => {
+    const onPick = vi.fn();
+    await renderWithServices(
+      <ElevationProfile track={track} activeIndex={20} onActiveIndexChange={() => {}} onPick={onPick} />,
+    );
+    const slider = screen.getByRole('slider');
+    slider.getBoundingClientRect = () => ({ left: 100, width: 400, top: 0, height: 140, right: 500, bottom: 140, x: 100, y: 0, toJSON: () => ({}) });
+
+    fireEvent.click(slider, { clientX: 400 }); // three quarters → km 75
+    expect(onPick.mock.lastCall![0]).toBeCloseTo(75, 1);
+
+    slider.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(onPick.mock.lastCall![0]).toBeCloseTo(20, 1);
+    expect(slider).toHaveAttribute('aria-valuetext', '20.0 km · 600 m');
+  });
+
+  it('shows checkpoints as numbered lines', async () => {
+    await renderWithServices(
+      <ElevationProfile
+        track={track}
+        activeIndex={null}
+        onActiveIndexChange={() => {}}
+        checkpoints={[{ id: 'a', distanceKm: 25, label: 'CP1 Café · 25.0 km', tag: '1' }]}
+      />,
+    );
+    const line = screen.getByTestId('profile-checkpoint');
+    expect(line).toHaveTextContent('1');
+    expect(line).toHaveAttribute('title', 'CP1 Café · 25.0 km');
+    expect(parseFloat(line.style.left)).toBeCloseTo(25, 2);
+  });
+
   it('explains when the track has no elevation', async () => {
     const flat = buildTrack('Flat', [
       { lat: 48, lon: 11, ele: null },

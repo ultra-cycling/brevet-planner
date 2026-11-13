@@ -39,13 +39,15 @@
     "sectionLabel": "Map and elevation profile",
     "start": "Start",
     "finish": "Finish",
-    "startFinish": "Start & finish"
+    "startFinish": "Start & finish",
+    "addCheckpoint": "Click to add a checkpoint here"
   },
   "profile": {
     "label": "Elevation profile",
     "hint": "Point at the profile to locate a position on the map",
     "position": "{{km}} · {{ele}}",
-    "noElevation": "This track has no elevation data, so no elevation profile can be shown."
+    "noElevation": "This track has no elevation data, so no elevation profile can be shown.",
+    "hintPick": "Point at the profile to locate a position on the map – click (or press Enter) to add a checkpoint"
   },
   "timeModel": {
     "speedClimb": {
@@ -53,5 +55,59 @@
       "speed": "Speed",
       "climbRate": "Climb rate"
     }
+  },
+  "checkpoints": {
+    "title": "Checkpoints",
+    "hint": "Click the track on the map or the elevation profile to add a checkpoint, enter its distance or import the waypoints of the GPX file.",
+    "start": "Start",
+    "finish": "Finish",
+    "cp": "CP{{number}}",
+    "columns": {
+      "control": "Control",
+      "name": "Name",
+      "km": "km",
+      "opens": "Opens",
+      "closes": "Closes",
+      "actions": "Actions",
+      "segment": "Segment km",
+      "climb": "Climb"
+    },
+    "namePlaceholder": "Name (optional)",
+    "nameLabel": "Name of {{control}}",
+    "kmLabel": "Distance of {{control}} in km",
+    "openLabel": "Opening time of {{control}}, hours after the start",
+    "closeLabel": "Closing time of {{control}}, hours after the start",
+    "remove": "Remove {{control}}",
+    "resetWindow": "Use the {{rules}} times for {{control}}",
+    "invalidWindow": "Closes before it opens",
+    "invalidTime": "Enter the time after the start as H:MM, e.g. 13:30",
+    "kmOutOfRange": "Enter a distance between 0 and {{max}}",
+    "duplicate": "There already is a checkpoint at this position.",
+    "added": "{{control}} added at {{km}}",
+    "addAtKm": "Add checkpoint at km",
+    "add": "Add",
+    "windowsNote": "Opening and closing times in hours:minutes after the start, pre-filled from the {{rules}} rules – edit them to match the route sheet.",
+    "import": {
+      "button_one": "Import {{count}} GPX waypoint",
+      "button_other": "Import {{count}} GPX waypoints",
+      "added_one": "Added {{count}} checkpoint from the GPX waypoints.",
+      "added_other": "Added {{count}} checkpoints from the GPX waypoints.",
+      "duplicates_one": "{{count}} waypoint already had a checkpoint.",
+      "duplicates_other": "{{count}} waypoints already had a checkpoint.",
+      "tooFar_one": "{{count}} waypoint is more than 1 km from the track and was skipped: {{names}}.",
+      "tooFar_other": "{{count}} waypoints are more than 1 km from the track and were skipped: {{names}}."
+    }
+  },
+  "controls": {
+    "rules": {
+      "acp": "ACP"
+    },
+    "brevetDistance": "Brevet distance ({{rules}})",
+    "brevetOption": "{{km}} km – limit {{limit}}",
+    "noBrevet": "No fixed time limit"
+  },
+  "segments": {
+    "label": "Segments",
+    "description": "{{name}}: {{distance}}, climb {{climb}}, descent {{descent}}"
   }
 }

@@ -1,4 +1,4 @@
-import { useMemo, useRef, type KeyboardEvent, type PointerEvent } from 'react';
+import { useMemo, useRef, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { elevationAxis, profileAreaPath, sampleProfile, ticks } from '../../domain/track/profile';
 import { nearestPointIndex, type Track } from '../../domain/track/track';
@@ -12,9 +12,25 @@ export interface ElevationProfileProps {
   /** Index of the highlighted track point (shared with the map) */
   activeIndex: number | null;
   onActiveIndexChange: (index: number | null) => void;
+  /** Controls drawn as vertical lines */
+  checkpoints?: readonly { id: string; distanceKm: number; label: string; tag: string }[];
+  /** Click or Enter on a position, e.g. to add a checkpoint there */
+  onPick?: (distanceKm: number) => void;
+  /** Range to emphasise, e.g. the hovered segment */
+  highlightRange?: { startKm: number; endKm: number } | null;
+  /** Rendered below the distance axis, aligned with the plot (e.g. the segment strip) */
+  footer?: ReactNode;
 }
 
-export function ElevationProfile({ track, activeIndex, onActiveIndexChange }: ElevationProfileProps) {
+export function ElevationProfile({
+  track,
+  activeIndex,
+  onActiveIndexChange,
+  checkpoints = [],
+  onPick,
+  highlightRange,
+  footer,
+}: ElevationProfileProps) {
   const { t } = useTranslation();
   const format = useFormat();
   const plotRef = useRef<HTMLDivElement>(null);
@@ -59,6 +75,11 @@ export function ElevationProfile({ track, activeIndex, onActiveIndexChange }: El
       Home: 0,
       End: track.distanceKm,
     };
+    if (e.key === 'Enter' && onPick && active) {
+      e.preventDefault();
+      onPick(active.distanceKm);
+      return;
+    }
     if (!(e.key in targets)) return;
     e.preventDefault();
     onActiveIndexChange(nearestPointIndex(track.points, targets[e.key]));
@@ -66,7 +87,7 @@ export function ElevationProfile({ track, activeIndex, onActiveIndexChange }: El
 
   const valueText = active
     ? t('profile.position', { km: format.km(active.distanceKm), ele: active.ele === null ? '–' : format.m(active.ele) })
-    : t('profile.hint');
+    : t(onPick ? 'profile.hintPick' : 'profile.hint');
 
   return (
     <section className="p-3 elevation-profile" aria-labelledby="profile-heading">
@@ -97,6 +118,7 @@ export function ElevationProfile({ track, activeIndex, onActiveIndexChange }: El
             onPointerMove={onPointerMove}
             onPointerDown={onPointerMove}
             onPointerLeave={() => onActiveIndexChange(null)}
+            onClick={onPick ? (e) => onPick(track.points[indexAt(e.clientX)].distanceKm) : undefined}
             onKeyDown={onKeyDown}
             onBlur={() => onActiveIndexChange(null)}
           >
@@ -104,6 +126,27 @@ export function ElevationProfile({ track, activeIndex, onActiveIndexChange }: El
               <path d={paths.area} className="profile-area" />
               <path d={paths.line} className="profile-line" vectorEffect="non-scaling-stroke" />
             </svg>
+            {highlightRange && (
+              <div
+                className="profile-range"
+                style={{
+                  left: `${pct(highlightRange.startKm)}%`,
+                  width: `${pct(highlightRange.endKm) - pct(highlightRange.startKm)}%`,
+                }}
+                data-testid="profile-range"
+              />
+            )}
+            {checkpoints.map((cp) => (
+              <div
+                key={cp.id}
+                className="profile-checkpoint"
+                style={{ left: `${pct(cp.distanceKm)}%` }}
+                title={cp.label}
+                data-testid="profile-checkpoint"
+              >
+                <span>{cp.tag}</span>
+              </div>
+            ))}
             {active && <div className="profile-cursor" style={{ left: `${pct(active.distanceKm)}%` }} data-testid="profile-cursor" />}
           </div>
           <div className="profile-x-axis small text-body-secondary tabular-nums" aria-hidden="true">
@@ -114,6 +157,7 @@ export function ElevationProfile({ track, activeIndex, onActiveIndexChange }: El
             ))}
             <span className="end">{format.km(track.distanceKm)}</span>
           </div>
+          {footer}
         </div>
       </div>
     </section>
