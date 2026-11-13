@@ -70,7 +70,8 @@
       "closes": "Closes",
       "actions": "Actions",
       "segment": "Segment km",
-      "climb": "Climb"
+      "climb": "Climb",
+      "window": "Control window"
     },
     "namePlaceholder": "Name (optional)",
     "nameLabel": "Name of {{control}}",
@@ -86,7 +87,7 @@
     "added": "{{control}} added at {{km}}",
     "addAtKm": "Add checkpoint at km",
     "add": "Add",
-    "windowsNote": "Opening and closing times in hours:minutes after the start, pre-filled from the {{rules}} rules – edit them to match the route sheet.",
+    "windowsNote": "Control window: opening and closing time in hours:minutes after the start, pre-filled from the {{rules}} rules – edit them to match the route sheet.",
     "import": {
       "button_one": "Import {{count}} GPX waypoint",
       "button_other": "Import {{count}} GPX waypoints",
@@ -109,5 +110,35 @@
   "segments": {
     "label": "Segments",
     "description": "{{name}}: {{distance}}, climb {{climb}}, descent {{descent}}"
+  },
+  "timetable": {
+    "title": "Checkpoints & timetable",
+    "columns": {
+      "ride": "Ride",
+      "arrive": "Arrive",
+      "rest": "Rest",
+      "depart": "Depart",
+      "buffer": "Buffer"
+    },
+    "paramLabel": "{{param}} ({{unit}}) to {{control}}",
+    "paramRange": "Enter a value between {{min}} and {{max}} {{unit}}",
+    "restLabel": "Rest at {{control}} in minutes",
+    "invalidRest": "Enter the rest in whole minutes",
+    "wait": "incl. {{time}} wait",
+    "note": "Speed and climb rate apply to the segment ending at the control – leave empty to use the plan's values. Buffer = time left until the control closes.",
+    "settings": {
+      "label": "Pace and totals",
+      "model": "Time model",
+      "paramLabel": "{{param}} ({{unit}})"
+    },
+    "totals": {
+      "ride": "Riding",
+      "stops": "Stops",
+      "finish": "Finish after",
+      "movingSpeed": "Moving avg.",
+      "overallSpeed": "Overall avg.",
+      "tightest": "Smallest buffer",
+      "tightestAt": "{{time}} at {{control}}"
+    }
   }
 }

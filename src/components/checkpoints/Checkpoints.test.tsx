@@ -41,13 +41,16 @@ async function renderWithTrack() {
   await screen.findByRole('heading', { level: 1, name: 'Line 200' });
 }
 
-/** Cells of the checkpoint table as text (inputs: their value) */
+/** Control, name, km, opens and closes of each table row as text (inputs: their value) */
 function table() {
-  return screen.getAllByTestId('checkpoint-row').map((row) =>
-    [...row.querySelectorAll('th, td:not(.segment-col)')]
-      .slice(0, 5)
-      .map((cell) => cell.querySelector('input')?.value ?? cell.textContent!.trim()),
-  );
+  const text = (cell: Element | null) => cell?.querySelector('input')?.value ?? cell?.textContent!.trim() ?? '';
+  return screen.getAllByTestId('checkpoint-row').map((row) => [
+    text(row.querySelector('th')),
+    text(row.querySelector('.name-cell')),
+    text(row.querySelector('td:nth-child(3)')),
+    (row.querySelector('input[id$="-open"]') as HTMLInputElement).value,
+    (row.querySelector('input[id$="-close"]') as HTMLInputElement).value,
+  ]);
 }
 
 describe('Checkpoints (US2)', () => {
@@ -221,3 +224,90 @@ describe('Segments (US3)', () => {
   });
 });
 
+
+describe('Timetable (US4)', () => {
+  const cell = (row: number, testId: string) =>
+    screen.getAllByTestId('checkpoint-row')[row].querySelector(`[data-testid="${testId}"]`)!.textContent;
+
+  it('estimates the riding time with the plan speed and climb rate', async () => {
+    await renderWithTrack();
+    // 210 km / 28 km/h = 7:30 + 210 m / 700 m/h = 0:18
+    expect(cell(1, 'ride-time')).toBe('7:48');
+    expect(cell(1, 'arrival')).toBe('7:48');
+    expect(cell(1, 'buffer')).toBe('5:42'); // closes at 13:30
+    expect(screen.getByTestId('total-ride')).toHaveTextContent('7:48');
+    expect(screen.getByTestId('total-stops')).toHaveTextContent('0:00');
+    expect(screen.getByTestId('total-finish')).toHaveTextContent('7:48');
+    expect(screen.getByTestId('total-tightest')).toHaveTextContent('5:42 at Finish');
+    expect(screen.getByLabelText('Speed (km/h)')).toHaveValue('28');
+    expect(screen.getByLabelText('Climb rate (m/h)')).toHaveValue('700');
+  });
+
+  it('rests at checkpoints and recalculates when the pace changes', async () => {
+    await renderWithTrack();
+    await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '100{Enter}');
+
+    expect(screen.getByLabelText('Rest at CP1 in minutes')).toHaveValue('15'); // planning.defaultRestMinutes
+    expect(cell(1, 'arrival')).toBe('3:43');
+    expect(cell(1, 'departure')).toBe('3:58');
+    expect(cell(2, 'arrival')).toBe('8:03');
+    expect(screen.getByTestId('total-stops')).toHaveTextContent('0:15');
+
+    const rest = screen.getByLabelText('Rest at CP1 in minutes');
+    await userEvent.clear(rest);
+    await userEvent.type(rest, '60{Enter}');
+    expect(cell(2, 'arrival')).toBe('8:48');
+
+    const speed = screen.getByLabelText('Speed (km/h)');
+    await userEvent.clear(speed);
+    await userEvent.type(speed, '25{Enter}');
+    // 100 km: 4:00 + 0:09, 60 min rest, 110 km: 4:24 + 0:09
+    expect(cell(1, 'arrival')).toBe('4:09');
+    expect(cell(2, 'arrival')).toBe('9:42');
+  });
+
+  it('overrides speed or climb rate for a single segment', async () => {
+    await renderWithTrack();
+    await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '100{Enter}');
+
+    const speed = screen.getByLabelText('Speed (km/h) to Finish');
+    expect(speed).toHaveValue('');
+    expect(speed).toHaveAttribute('placeholder', '28');
+    await userEvent.type(speed, '20{Enter}');
+    expect(speed.closest('td')).toHaveClass('is-overridden');
+    expect(cell(2, 'ride-time')).toBe('5:39'); // 110 km at 20 km/h + 110 m at 700 m/h
+    expect(cell(1, 'ride-time')).toBe('3:43'); // other segments keep the plan values
+
+    await userEvent.clear(speed);
+    await userEvent.tab();
+    expect(cell(2, 'ride-time')).toBe('4:05');
+  });
+
+  it('rejects parameters outside the model range', async () => {
+    await renderWithTrack();
+    const speed = screen.getByLabelText('Speed (km/h)');
+    await userEvent.clear(speed);
+    await userEvent.type(speed, '500{Enter}');
+    expect(speed).toHaveAccessibleDescription('Enter a value between 1 and 80 km/h');
+    expect(cell(1, 'ride-time')).toBe('7:48');
+
+    const rest = screen.getByLabelText('Speed (km/h) to Finish');
+    await userEvent.type(rest, '0{Enter}');
+    expect(rest).toHaveAccessibleDescription('Enter a value between 1 and 80 km/h');
+  });
+
+  it('waits at a control that is not open yet', async () => {
+    await renderWithTrack();
+    await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '20{Enter}');
+    const speed = screen.getByLabelText('Speed (km/h)');
+    await userEvent.clear(speed);
+    await userEvent.type(speed, '50{Enter}');
+    const rest = screen.getByLabelText('Rest at CP1 in minutes');
+    await userEvent.clear(rest);
+    await userEvent.type(rest, '0{Enter}');
+
+    // 20 km at 50 km/h + 20 m climb = 0:26, the control opens at 0:35
+    expect(cell(1, 'arrival')).toBe('0:26');
+    expect(cell(1, 'departure')).toBe('0:35incl. 0:09 wait');
+  });
+});

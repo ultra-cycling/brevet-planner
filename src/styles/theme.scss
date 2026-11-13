@@ -206,21 +206,28 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
 .checkpoint-table {
   caption-side: bottom;
 
+  // headers wrap on tablet so that they aren't wider than the inputs below them
+  th {
+    @include media-breakpoint-up(xl) {
+      white-space: nowrap;
+    }
+  }
+
   .name-cell {
-    min-width: 10rem;
+    min-width: 8rem;
   }
 
   .km-input {
-    width: 5.5rem;
+    width: 4.5rem;
     margin-left: auto;
   }
 
   .time-input {
-    width: 5.5rem;
+    width: 4.25rem;
   }
 
   // edited opening/closing time: marked by a dot and italics, not by color alone
-  .is-overridden .time-input {
+  .is-overridden input {
     font-style: italic;
     border-color: $checkpoint;
     background-image: radial-gradient(circle, $checkpoint 3px, transparent 3.5px);
@@ -302,4 +309,60 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
   tr.is-active-segment > * {
     background-color: rgba($route, 0.06);
   }
+}
+
+// ---- Timetable (US4) ----
+
+.checkpoint-table {
+  .param-input,
+  .rest-input {
+    width: 4rem;
+    margin-left: auto;
+  }
+
+  .window-cell {
+    display: flex;
+    gap: 0.25rem;
+
+    @include media-breakpoint-down(xl) {
+      flex-direction: column;
+    }
+  }
+
+  // room for the "edited" dot next to right-aligned numbers
+  .is-overridden .param-input {
+    padding-right: 1.1rem;
+  }
+
+  @include media-breakpoint-down(xl) {
+    font-size: 0.875rem;
+
+    .name-cell {
+      min-width: 6.5rem;
+    }
+  }
+
+  // the placeholder shows the plan's value – keep it readable, it is the value in use
+  .param-input::placeholder {
+    color: $body-secondary-color;
+    opacity: 1;
+  }
+
+  .depart-col {
+    @include media-breakpoint-down(xl) {
+      display: none;
+    }
+  }
+}
+
+.plan-settings {
+  .plan-param {
+    width: 9rem;
+  }
+}
+
+// Absolutely positioned children (e.g. visually-hidden header labels) must be clipped by the scroll container,
+// otherwise they escape it and make the whole page scroll horizontally.
+.table-responsive {
+  position: relative;
 }

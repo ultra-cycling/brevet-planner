@@ -1,4 +1,5 @@
 import type { ControlKind, ControlRules, ControlWindow } from './controls/ControlRules';
+import type { EstimatorParams } from './time/TimeEstimator';
 import { snapToTrack, type TrackPosition } from './track/snap';
 import type { Track } from './track/track';
 
@@ -19,6 +20,13 @@ export interface Checkpoint extends TrackPosition {
   /** Minutes after the start; `null` = use the control rules */
   openOverrideMin: number | null;
   closeOverrideMin: number | null;
+  /** Planned rest at this control in minutes (always 0 for start and finish) */
+  restMin: number;
+  /**
+   * Time model parameters for the segment that *ends* at this control, overriding the plan's defaults
+   * (e.g. a lower speed for a headwind stretch). Keys unknown to the selected model are ignored.
+   */
+  segmentParams: Partial<EstimatorParams>;
 }
 
 export interface CheckpointState {
@@ -29,11 +37,17 @@ export interface CheckpointState {
 
 export type CheckpointAction =
   | { type: 'reset'; track: Track; brevetKm: number | null }
-  | { type: 'add'; id: string; position: TrackPosition; name?: string; source: CheckpointSource }
-  | { type: 'addMany'; items: { id: string; position: TrackPosition; name: string; source: CheckpointSource }[] }
+  | { type: 'add'; id: string; position: TrackPosition; name?: string; source: CheckpointSource; restMin?: number }
+  | {
+      type: 'addMany';
+      items: { id: string; position: TrackPosition; name: string; source: CheckpointSource }[];
+      restMin?: number;
+    }
   | { type: 'move'; id: string; position: TrackPosition }
   | { type: 'rename'; id: string; name: string }
   | { type: 'setWindow'; id: string; openOverrideMin?: number | null; closeOverrideMin?: number | null }
+  | { type: 'setRest'; id: string; restMin: number }
+  | { type: 'setSegmentParam'; id: string; key: string; value: number | null }
   | { type: 'remove'; id: string }
   | { type: 'setBrevetKm'; brevetKm: number | null };
 
@@ -43,8 +57,18 @@ function sorted(checkpoints: Checkpoint[]): Checkpoint[] {
   return [...checkpoints].sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || a.distanceKm - b.distanceKm);
 }
 
-function control(id: string, position: TrackPosition, name: string, source: CheckpointSource): Checkpoint {
-  return { id, kind: 'control', name, source, ...position, openOverrideMin: null, closeOverrideMin: null };
+function control(id: string, position: TrackPosition, name: string, source: CheckpointSource, restMin = 0): Checkpoint {
+  return {
+    id,
+    kind: 'control',
+    name,
+    source,
+    ...position,
+    openOverrideMin: null,
+    closeOverrideMin: null,
+    restMin,
+    segmentParams: {},
+  };
 }
 
 export function initialCheckpointState(track: Track, brevetKm: number | null): CheckpointState {
@@ -60,6 +84,8 @@ export function initialCheckpointState(track: Track, brevetKm: number | null): C
     lon: p.lon,
     openOverrideMin: null,
     closeOverrideMin: null,
+    restMin: 0,
+    segmentParams: {},
   });
   return { checkpoints: [endpoint('start', start), endpoint('finish', finish)], brevetKm };
 }
@@ -78,14 +104,17 @@ export function checkpointReducer(state: CheckpointState, action: CheckpointActi
     case 'add':
       return {
         ...state,
-        checkpoints: sorted([...state.checkpoints, control(action.id, action.position, action.name ?? '', action.source)]),
+        checkpoints: sorted([
+          ...state.checkpoints,
+          control(action.id, action.position, action.name ?? '', action.source, action.restMin),
+        ]),
       };
     case 'addMany':
       return {
         ...state,
         checkpoints: sorted([
           ...state.checkpoints,
-          ...action.items.map((item) => control(item.id, item.position, item.name, item.source)),
+          ...action.items.map((item) => control(item.id, item.position, item.name, item.source, action.restMin)),
         ]),
       };
     case 'move':
@@ -99,6 +128,16 @@ export function checkpointReducer(state: CheckpointState, action: CheckpointActi
         openOverrideMin: action.openOverrideMin !== undefined ? action.openOverrideMin : cp.openOverrideMin,
         closeOverrideMin: action.closeOverrideMin !== undefined ? action.closeOverrideMin : cp.closeOverrideMin,
       }));
+    case 'setRest':
+      return update(action.id, (cp) => (cp.kind === 'control' ? { ...cp, restMin: Math.max(0, action.restMin) } : cp));
+    case 'setSegmentParam':
+      return update(action.id, (cp) => {
+        if (cp.kind === 'start') return cp; // no segment ends at the start
+        const segmentParams = { ...cp.segmentParams };
+        if (action.value === null) delete segmentParams[action.key];
+        else segmentParams[action.key] = action.value;
+        return { ...cp, segmentParams };
+      });
     case 'remove':
       return {
         ...state,

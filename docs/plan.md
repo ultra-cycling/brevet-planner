@@ -32,7 +32,7 @@ Responsive behaviour:
 | Device              | Behaviour                                                                     |
 |---------------------|-------------------------------------------------------------------------------|
 | Desktop (≥ 1200 px) | Full layout, all timetable columns                                            |
-| Tablet (≥ 768 px)   | Settings bar wraps, smaller map, *Segment* and *Depart* columns hidden         |
+| Tablet (≥ 768 px)   | Settings bar wraps, smaller map, *Segment*/*Climb* and *Depart* columns hidden, control window stacked |
 | Phone               | Read-only timetable cards (CP, ETA, window, buffer) with a small map           |
 
 Visual language: white panels on a light neutral ground, orange route (`#C2410C`), blue checkpoint markers
@@ -101,6 +101,7 @@ values fall back to built-in defaults; invalid values stop the start-up with an 
 | `storage.backend`                | `localStorage`                                    | start          |
 | `planning.defaultStartTime`      | `06:00`                                           | start          |
 | `planning.tightBufferMinutes`    | `75`                                              | start          |
+| `planning.defaultRestMinutes`    | `15`                                              | start          |
 | `planning.timeModel.id`          | `speed-climb`                                     | start          |
 | `planning.timeModel.params`      | model defaults (`speedKmh: 28`, `climbRateMh: 700`) | start        |
 
@@ -130,7 +131,7 @@ Every iteration is done when its features are covered by unit tests (Vitest + Te
 | 1 ✅ | **US1** – upload GPX (button or drag & drop), parse track, show it on the CyclOSM map, elevation profile linked to the map |
 | 2 ✅ | **US2** – checkpoints: click on map / profile (snap to track), enter km, import GPX waypoints; ACP windows, editable |
 | 3 ✅ | **US3** – segments between checkpoints with distance and climb                                                     |
-| 4  | **US4** – speed + climb-rate estimator, per-segment overrides, rest time per checkpoint, timetable                  |
+| 4 ✅ | **US4** – speed + climb-rate estimator, per-segment overrides, rest time per checkpoint, timetable                  |
 | 5  | **US6** – start date/time, live recalculation, status (OK/Tight/Early/Late)                                        |
 | 6  | **US5** – multiple plans, plan switcher, create/rename/delete                                                      |
 | 7  | Phone layout – read-only timetable                                                                                 |
@@ -155,3 +156,12 @@ Every iteration is done when its features are covered by unit tests (Vitest + Te
   elevation profile (aligned with its distance axis, also on tablet) and as *Segment km* / *Climb* columns in the
   table (desktop only). Hovering or focusing a segment – chip or table row – highlights it on the map, the profile
   and in the table.
+- **4 (US4):** The plan settings bar below the track summary holds the time model (select, generic inputs from the
+  model's parameter definitions, defaults from `config.yaml`) and the totals: riding, stops, finish after, moving and
+  overall average speed, smallest buffer. The checkpoint table became the editable timetable: per segment the model
+  parameters can be overridden (empty field = plan value, shown as placeholder), each checkpoint has a rest time
+  (pre-filled with `planning.defaultRestMinutes`). A rider can't leave a control before it opens, so the departure is
+  `max(arrival + rest, opening)` – rest is spent while waiting, only the remainder counts as waiting time. Buffer =
+  closing time − arrival (negative = late); the OK/Tight/Early/Late status follows in iteration 5 together with clock
+  times. Opening and closing time share one *Control window* column (stacked on tablet) so the whole timetable fits a
+  tablet without horizontal scrolling. Time model and its parameters are held in memory until plans are persisted (US5).

@@ -12,10 +12,11 @@ describe('parseConfig', () => {
   it('merges given values over the defaults', () => {
     const config = parseConfig({
       site: { url: 'https://brevet.example.org' },
-      planning: { tightBufferMinutes: 90, timeModel: { params: { speedKmh: 25 } } },
+      planning: { tightBufferMinutes: 90, defaultRestMinutes: 20, timeModel: { params: { speedKmh: 25 } } },
     });
     expect(config.site.url).toBe('https://brevet.example.org');
     expect(config.planning.tightBufferMinutes).toBe(90);
+    expect(config.planning.defaultRestMinutes).toBe(20);
     expect(config.planning.timeModel).toEqual({ id: 'speed-climb', params: { speedKmh: 25 } });
     expect(config.planning.defaultStartTime).toBe('06:00');
     expect(config.map).toEqual(defaultConfig.map);
@@ -26,6 +27,7 @@ describe('parseConfig', () => {
     ['site.url is not a URL', { site: { url: 'not a url' } }, /site\.url/],
     ['tight threshold is negative', { planning: { tightBufferMinutes: -5 } }, /tightBufferMinutes/],
     ['tight threshold is a string', { planning: { tightBufferMinutes: '75' } }, /tightBufferMinutes/],
+    ['default rest is negative', { planning: { defaultRestMinutes: -1 } }, /defaultRestMinutes/],
     ['start time is malformed', { planning: { defaultStartTime: '6 am' } }, /defaultStartTime/],
     ['storage backend is unknown', { storage: { backend: 'mongo' } }, /storage\.backend/],
     ['default language is not listed', { i18n: { defaultLanguage: 'de', languages: ['en'] } }, /defaultLanguage/],

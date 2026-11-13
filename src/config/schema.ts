@@ -15,6 +15,8 @@ export interface AppConfig {
   planning: {
     defaultStartTime: string;
     tightBufferMinutes: number;
+    /** Rest time pre-filled for new intermediate controls */
+    defaultRestMinutes: number;
     timeModel: TimeModelConfig;
   };
 }
@@ -36,6 +38,7 @@ export const defaultConfig: AppConfig = {
   planning: {
     defaultStartTime: '06:00',
     tightBufferMinutes: 75,
+    defaultRestMinutes: 15,
     timeModel: { id: 'speed-climb', params: {} },
   },
 };
@@ -149,6 +152,7 @@ export function parseConfig(raw: unknown): AppConfig {
     planning: {
       defaultStartTime,
       tightBufferMinutes: num(planning, 'tightBufferMinutes', 'planning.tightBufferMinutes', d.planning.tightBufferMinutes, 0),
+      defaultRestMinutes: num(planning, 'defaultRestMinutes', 'planning.defaultRestMinutes', d.planning.defaultRestMinutes, 0),
       timeModel: {
         id: str(timeModel, 'id', 'planning.timeModel.id', d.planning.timeModel.id),
         params: parsedParams,

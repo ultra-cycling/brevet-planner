@@ -1,10 +1,11 @@
 import { useState, type Dispatch, type FormEvent } from 'react';
 import { Alert, Button, Form, Table } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
-import { importWaypoints, type CheckpointAction, type CheckpointState, type ControlRow } from '../../domain/checkpoints';
+import { importWaypoints, type CheckpointAction, type CheckpointState } from '../../domain/checkpoints';
 import type { ControlRules } from '../../domain/controls/ControlRules';
-import type { Segment } from '../../domain/segments';
 import { formatElapsed, parseElapsed } from '../../domain/time/duration';
+import type { EstimatorParamDef, EstimatorParams, TimeEstimator } from '../../domain/time/TimeEstimator';
+import type { Timetable, TimetableRow } from '../../domain/timetable';
 import { positionAtDistance } from '../../domain/track/snap';
 import type { Track } from '../../domain/track/track';
 import { useFormat } from '../../i18n/useFormat';
@@ -15,18 +16,22 @@ import { useControlLabel } from './useControlLabel';
 export interface CheckpointPanelProps {
   track: Track;
   state: CheckpointState;
-  rows: ControlRow[];
   rules: ControlRules;
   dispatch: Dispatch<CheckpointAction>;
   /** Adds an intermediate control; returns false if there already is one at that distance */
   onAdd: (distanceKm: number) => boolean;
-  /** Segments between consecutive controls; each row shows the segment that ends at its control */
-  segments: readonly Segment[];
+  /** Timetable of the controls; each row also shows the segment that ends at its control */
+  timetable: Timetable;
+  estimator: TimeEstimator;
+  /** Plan-wide time model parameters (resolved) – shown as placeholder where a segment has no override */
+  planParams: EstimatorParams;
+  /** Rest pre-filled for new checkpoints (waypoint import) */
+  defaultRestMin: number;
   activeSegment: number | null;
   onActiveSegmentChange: (index: number | null) => void;
 }
 
-const parseKm = (text: string) => {
+const parseNumber = (text: string) => {
   const value = Number(text.trim().replace(',', '.'));
   return text.trim() !== '' && Number.isFinite(value) ? value : null;
 };
@@ -34,11 +39,13 @@ const parseKm = (text: string) => {
 export function CheckpointPanel({
   track,
   state,
-  rows,
   rules,
   dispatch,
   onAdd,
-  segments,
+  timetable,
+  estimator,
+  planParams,
+  defaultRestMin,
   activeSegment,
   onActiveSegmentChange,
 }: CheckpointPanelProps) {
@@ -55,7 +62,7 @@ export function CheckpointPanel({
 
   const onAddAtKm = (e: FormEvent) => {
     e.preventDefault();
-    const km = parseKm(newKm);
+    const km = parseNumber(newKm);
     const error = kmError(km) ?? (onAdd(km!) ? null : t('checkpoints.duplicate'));
     setNewKmError(error);
     if (error === null) setNewKm('');
@@ -66,6 +73,7 @@ export function CheckpointPanel({
     dispatch({
       type: 'addMany',
       items: result.items.map((item) => ({ ...item, id: crypto.randomUUID(), source: 'waypoint' })),
+      restMin: defaultRestMin,
     });
     const parts = [t('checkpoints.import.added', { count: result.items.length })];
     if (result.duplicates > 0) parts.push(t('checkpoints.import.duplicates', { count: result.duplicates }));
@@ -75,13 +83,13 @@ export function CheckpointPanel({
     setImportMessage(parts.join(' '));
   };
 
-  const timeCell = (row: ControlRow, which: 'open' | 'close', label: string) => {
+  const timeCell = (row: TimetableRow['control'], which: 'open' | 'close', label: string) => {
     const cp = row.checkpoint;
     const key = which === 'open' ? 'openOverrideMin' : 'closeOverrideMin';
     const ruleValue = which === 'open' ? row.ruleWindow.openMin : row.ruleWindow.closeMin;
     const value = which === 'open' ? row.window.openMin : row.window.closeMin;
     return (
-      <td className={cp[key] !== null ? 'is-overridden' : undefined}>
+      <div className={cp[key] !== null ? 'is-overridden' : undefined}>
         <CommitInput
           id={`cp-${cp.id}-${which}`}
           size="sm"
@@ -96,9 +104,70 @@ export function CheckpointPanel({
             return null;
           }}
         />
+      </div>
+    );
+  };
+
+  const paramCell = ({ control }: TimetableRow, def: EstimatorParamDef, label: string) => {
+    const cp = control.checkpoint;
+    if (cp.kind === 'start') return <td key={def.key} />;
+    const override = cp.segmentParams[def.key];
+    return (
+      <td key={def.key} className={override !== undefined ? 'is-overridden' : undefined}>
+        <CommitInput
+          id={`cp-${cp.id}-${def.key}`}
+          size="sm"
+          className="param-input text-end tabular-nums"
+          inputMode="decimal"
+          aria-label={t('timetable.paramLabel', { param: t(def.labelKey), unit: def.unit, control: label })}
+          value={override !== undefined ? String(override) : ''}
+          placeholder={String(planParams[def.key])}
+          onCommit={(text) => {
+            if (text.trim() === '') {
+              dispatch({ type: 'setSegmentParam', id: cp.id, key: def.key, value: null });
+              return null;
+            }
+            const value = parseNumber(text);
+            if (value === null || value < def.min || value > def.max) {
+              return t('timetable.paramRange', { min: def.min, max: def.max, unit: def.unit });
+            }
+            dispatch({
+              type: 'setSegmentParam',
+              id: cp.id,
+              key: def.key,
+              value: value === planParams[def.key] ? null : value,
+            });
+            return null;
+          }}
+        />
       </td>
     );
   };
+
+  const restCell = ({ control }: TimetableRow, label: string) => {
+    const cp = control.checkpoint;
+    if (cp.kind !== 'control') return <td />;
+    return (
+      <td>
+        <CommitInput
+          id={`cp-${cp.id}-rest`}
+          size="sm"
+          className="rest-input text-end tabular-nums"
+          inputMode="numeric"
+          aria-label={t('timetable.restLabel', { control: label })}
+          value={String(cp.restMin)}
+          onCommit={(text) => {
+            const minutes = parseNumber(text);
+            if (minutes === null || minutes < 0 || !Number.isInteger(minutes)) return t('timetable.invalidRest');
+            dispatch({ type: 'setRest', id: cp.id, restMin: minutes });
+            return null;
+          }}
+        />
+      </td>
+    );
+  };
+
+  const duration = (minutes: number | null) => (minutes === null ? '' : formatElapsed(minutes));
 
   return (
     <section className="card" aria-labelledby="checkpoints-heading">
@@ -106,7 +175,7 @@ export function CheckpointPanel({
         <div className="d-flex flex-wrap align-items-end gap-3">
           <div className="me-auto">
             <h2 id="checkpoints-heading" className="h5 mb-1">
-              {t('checkpoints.title')}
+              {t('timetable.title')}
             </h2>
             <p className="small text-body-secondary mb-0">{t('checkpoints.hint')}</p>
           </div>
@@ -141,8 +210,7 @@ export function CheckpointPanel({
         )}
 
         <div className="table-responsive">
-          <Table size="sm" className="checkpoint-table align-middle mb-0">
-            <caption className="small text-body-secondary">{t('checkpoints.windowsNote', { rules: rulesName })}</caption>
+          <Table size="sm" className="checkpoint-table align-middle mb-0" aria-describedby="timetable-note">
             <thead>
               <tr>
                 <th scope="col">{t('checkpoints.columns.control')}</th>
@@ -156,19 +224,39 @@ export function CheckpointPanel({
                 <th scope="col" className="segment-col text-end pe-4">
                   {t('checkpoints.columns.climb')}
                 </th>
-                <th scope="col">{t('checkpoints.columns.opens')}</th>
-                <th scope="col">{t('checkpoints.columns.closes')}</th>
+                {estimator.params.map((def) => (
+                  <th key={def.key} scope="col" className="text-end">
+                    {t(def.labelKey)} <span className="fw-normal text-body-secondary">{def.unit}</span>
+                  </th>
+                ))}
+                <th scope="col" className="text-end">
+                  {t('timetable.columns.ride')}
+                </th>
+                <th scope="col" className="text-end">
+                  {t('timetable.columns.arrive')}
+                </th>
+                <th scope="col">{t('checkpoints.columns.window')}</th>
+                <th scope="col" className="text-end">
+                  {t('timetable.columns.rest')} <span className="fw-normal text-body-secondary">min</span>
+                </th>
+                <th scope="col" className="depart-col text-end">
+                  {t('timetable.columns.depart')}
+                </th>
+                <th scope="col" className="text-end">
+                  {t('timetable.columns.buffer')}
+                </th>
                 <th scope="col">
                   <span className="visually-hidden">{t('checkpoints.columns.actions')}</span>
                 </th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => {
+              {timetable.rows.map((entry) => {
+                const row = entry.control;
                 const cp = row.checkpoint;
                 const label = controlLabel(row);
                 const overridden = cp.openOverrideMin !== null || cp.closeOverrideMin !== null;
-                const segment = segments.find((s) => s.to.id === cp.id);
+                const segment = entry.segment;
                 const rowClass = [
                   row.invalid ? 'table-warning' : '',
                   segment && segment.index === activeSegment ? 'is-active-segment' : '',
@@ -192,6 +280,7 @@ export function CheckpointPanel({
                           size="sm"
                           aria-label={t('checkpoints.nameLabel', { control: label })}
                           placeholder={t('checkpoints.namePlaceholder')}
+                          title={cp.name || undefined}
                           value={cp.name}
                           onCommit={(text) => {
                             dispatch({ type: 'rename', id: cp.id, name: text.trim() });
@@ -210,7 +299,7 @@ export function CheckpointPanel({
                           aria-label={t('checkpoints.kmLabel', { control: label })}
                           value={cp.distanceKm.toFixed(1)}
                           onCommit={(text) => {
-                            const km = parseKm(text);
+                            const km = parseNumber(text);
                             const error = kmError(km);
                             if (error) return error;
                             dispatch({ type: 'move', id: cp.id, position: positionAtDistance(track, km!) });
@@ -227,8 +316,31 @@ export function CheckpointPanel({
                     <td className="segment-col text-end tabular-nums text-nowrap pe-4" data-testid="segment-climb">
                       {segment ? format.m(segment.climbM) : ''}
                     </td>
-                    {timeCell(row, 'open', label)}
-                    {timeCell(row, 'close', label)}
+                    {estimator.params.map((def) => paramCell(entry, def, label))}
+                    <td className="text-end tabular-nums" data-testid="ride-time">
+                      {duration(entry.rideMin)}
+                    </td>
+                    <td className="text-end tabular-nums fw-semibold" data-testid="arrival">
+                      {cp.kind === 'start' ? '' : duration(entry.arrivalMin)}
+                    </td>
+                    <td>
+                      <div className="window-cell">
+                        {timeCell(row, 'open', label)}
+                        {timeCell(row, 'close', label)}
+                      </div>
+                    </td>
+                    {restCell(entry, label)}
+                    <td className="depart-col text-end tabular-nums" data-testid="departure">
+                      {duration(entry.departureMin)}
+                      {entry.waitMin >= 0.5 && (
+                        <div className="small text-body-secondary text-nowrap" data-testid="wait">
+                          {t('timetable.wait', { time: formatElapsed(entry.waitMin) })}
+                        </div>
+                      )}
+                    </td>
+                    <td className="text-end tabular-nums" data-testid="buffer">
+                      {duration(entry.bufferMin)}
+                    </td>
                     <td className="text-end text-nowrap">
                       {row.invalid && <span className="small me-2">{t('checkpoints.invalidWindow')}</span>}
                       {overridden && (
@@ -264,6 +376,9 @@ export function CheckpointPanel({
             </tbody>
           </Table>
         </div>
+        <p id="timetable-note" className="small text-body-secondary mb-0">
+          {t('checkpoints.windowsNote', { rules: rulesName })} {t('timetable.note')}
+        </p>
 
         <Form className="d-flex flex-wrap align-items-start gap-2" onSubmit={onAddAtKm} noValidate>
           <Form.Label htmlFor="new-checkpoint-km" className="small mb-0 align-self-center">

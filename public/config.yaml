@@ -32,6 +32,8 @@ planning:
   defaultStartTime: "06:00"
   # An arrival is marked "tight" when less than this many minutes remain before the control closes.
   tightBufferMinutes: 75
+  # Rest time (minutes) pre-filled for every new checkpoint – editable per checkpoint.
+  defaultRestMinutes: 15
   timeModel:
     # Exchangeable model that estimates the riding time of a segment.
     id: speed-climb
