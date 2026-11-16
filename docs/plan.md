@@ -32,6 +32,23 @@ stories that aren't built yet are marked *proposed* and are refined at the start
 US5 (storing plans) is postponed: until then the track and the plan are held in memory and are lost when the page
 is reloaded. The storage interface from iteration 0 stays in place for it.
 
+### Backlog
+
+Stories captured but not yet scheduled; their acceptance criteria are proposals to be refined with the product owner
+(open questions are listed in each feature file).
+
+| Story | Scope | Kind |
+|-------|-------|------|
+| [US13 – Fix the phone layout on iPhone](features/us13-phone-layout-fixes.md) | elevation profile overlaps other content on iPhone; test the phone layout in WebKit | bug, details open |
+| [US15 – Compact plan summary](features/us15-compact-plan-summary.md) | one-line overview at the top of the plan column, settings behind an *Edit* button | improvement, details open |
+| [US14 – Clean timetable with edit mode](features/us14-clean-timetable.md) | read-only timetable by default, details of a checkpoint behind an *Edit* button | improvement, details open |
+| [US12 – Realistic climb from terrain data](features/us12-elevation-from-terrain-data.md) | elevations from a digital elevation model, climb comparable to other planners | feature |
+| [US11 – Overlapping track sections](features/us11-overlapping-track-sections.md) | parallel lines and direction arrows where the track runs along itself; unambiguous clicking | feature |
+| [US10 – PDF export of the legs](features/us10-pdf-export.md) | PDF with overview and one section per leg: profile, distances, times | feature |
+
+Suggested order (top to bottom): the iPhone bug first; US15 and US14 change the plan column, which the PDF export
+and later features build on; US12 corrects the numbers everything else is calculated from.
+
 ## UI design
 
 Design canvas (proposals A, B, C and the chosen hybrid): <https://claude.ai/artifact/CgwLYJLoNvm7oaKe827MXE>
