@@ -1,6 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { InMemoryPlanRepository } from '../storage/InMemoryPlanRepository';
+import { lineGpx, planFileFor, samplePlanFiles } from '../test/planFixtures';
 import { renderWithServices } from '../test/renderWithServices';
 import { App } from './App';
 import { StartupError } from './StartupError';
@@ -19,12 +21,15 @@ const gpx = `<gpx version="1.1" xmlns="http://www.topografix.com/GPX/1/1">
 
 const gpxFile = (content = gpx, name = 'loop.gpx') => new File([content], name, { type: 'application/gpx+xml' });
 
+beforeEach(() => window.history.replaceState(null, '', '/'));
+
 describe('App', () => {
-  it('shows the brand, language selector and empty state', async () => {
+  it('shows the brand, the language selector and the start screen', async () => {
     await renderWithServices(<App />);
     expect(screen.getByRole('link', { name: /brevet planner/i })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Language' })).toHaveDisplayValue('English');
-    expect(screen.getByRole('heading', { level: 1, name: 'No track yet' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Route plans' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'New plan' })).toBeInTheDocument();
   });
 
   it('shows the track after uploading a GPX file', async () => {
@@ -38,19 +43,10 @@ describe('App', () => {
     expect(screen.getByTestId('track-maxElevation')).toHaveTextContent('620 m');
     expect(screen.getByTestId('track-map')).toHaveTextContent('Morning loop');
     expect(screen.getByRole('slider', { name: 'Elevation profile' })).toBeInTheDocument();
-    expect(screen.queryByText('No track yet')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'New plan' })).not.toBeInTheDocument();
   });
 
-  it('replaces the track when another file is uploaded from the header', async () => {
-    await renderWithServices(<App />);
-    await userEvent.upload(screen.getByLabelText('Choose GPX file'), gpxFile());
-    await screen.findByRole('heading', { name: 'Morning loop' });
-
-    await userEvent.upload(screen.getByLabelText('Upload GPX'), gpxFile(gpx.replace('Morning loop', 'Evening loop')));
-    expect(await screen.findByRole('heading', { level: 1, name: 'Evening loop' })).toBeInTheDocument();
-  });
-
-  it('accepts a file dropped on the empty state', async () => {
+  it('accepts a file dropped on the start screen', async () => {
     await renderWithServices(<App />);
     fireEvent.drop(screen.getByTestId('gpx-drop-zone'), { dataTransfer: { files: [gpxFile()] } });
     expect(await screen.findByRole('heading', { level: 1, name: 'Morning loop' })).toBeInTheDocument();
@@ -64,7 +60,162 @@ describe('App', () => {
     await renderWithServices(<App />);
     await userEvent.upload(screen.getByLabelText('Choose GPX file'), file, { applyAccept: false });
     expect(await screen.findByRole('alert')).toHaveTextContent(message);
-    expect(screen.getByText('No track yet')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'New plan' })).toBeInTheDocument();
+  });
+});
+
+describe('Route plans (US5)', () => {
+  let downloads: { name: string; content: Promise<string> }[];
+
+  beforeEach(() => {
+    downloads = [];
+    // jsdom has no object URLs and doesn't download – record what would be downloaded
+    URL.createObjectURL = vi.fn((blob: Blob) => {
+      downloads.push({ name: '', content: blob.text() });
+      return `blob:${downloads.length}`;
+    });
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      downloads.at(-1)!.name = this.download;
+    });
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  const repository = (extra: Record<string, string> = {}) => new InMemoryPlanRepository({ ...samplePlanFiles(), ...extra });
+  const renderApp = (planRepository = repository()) => renderWithServices(<App />, { planRepository });
+  const openSavedPlan = async () => {
+    await userEvent.click(await screen.findByRole('link', { name: /Line 200 – spring/ }));
+    return screen.findByRole('heading', { level: 1, name: 'Line 200 – spring' });
+  };
+
+  it('lists the saved plans next to the upload, with tracks without plan and broken files', async () => {
+    await renderApp(repository({ 'broken.plan.json': '{oops' }));
+    const card = await screen.findByRole('link', { name: /Line 200 – spring/ });
+    expect(card).toHaveTextContent('Sat, May 1, 2027 · 06:00');
+    expect(card).toHaveTextContent('210.0 km · ↑210 m · 1 checkpoint · 200 km brevet');
+    expect(card).toHaveAttribute('href', '?plan=line-200');
+
+    const broken = screen.getAllByTestId('plan-card').find((c) => c.textContent?.includes('broken.plan.json'))!;
+    expect(within(broken).getByTestId('plan-error')).toHaveTextContent('The file is not valid JSON.');
+
+    const tracks = within(screen.getByRole('region', { name: 'Tracks without plan' }));
+    expect(tracks.getByTestId('track-without-plan')).toHaveTextContent('Unplanned routeunplanned.gpx');
+  });
+
+  it('explains how to add plans when the folder is empty', async () => {
+    await renderApp(new InMemoryPlanRepository());
+    expect(await screen.findByTestId('plans-empty')).toHaveTextContent('No saved plans yet.');
+    expect(screen.getByTestId('plans-empty')).toHaveTextContent('public/plans/');
+  });
+
+  it('opens a saved plan with all its planning decisions and puts it into the URL', async () => {
+    await renderApp();
+    await openSavedPlan();
+    expect(window.location.search).toBe('?plan=line-200');
+    expect(screen.getByLabelText('Name of CP1 Café')).toHaveValue('Café');
+    expect(screen.getByLabelText('Rest at CP1 Café in minutes')).toHaveValue('20');
+    expect(screen.getByLabelText('Start date')).toHaveValue('2027-05-01');
+    expect(screen.getByLabelText('Start time')).toHaveValue('06:00');
+    expect(screen.getByLabelText('Time zone')).toHaveValue('Europe/Berlin');
+    expect(screen.queryByTestId('unsaved')).not.toBeInTheDocument();
+  });
+
+  it('opens the plan of the URL directly, and explains unknown plans', async () => {
+    window.history.replaceState(null, '', '/?plan=line-200');
+    const { unmount } = await renderApp();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Line 200 – spring' })).toBeInTheDocument();
+    unmount();
+
+    window.history.replaceState(null, '', '/?plan=missing');
+    await renderApp();
+    expect(await screen.findByTestId('start-message')).toHaveTextContent('The plan “missing” was not found.');
+    expect(window.location.search).toBe('');
+  });
+
+  it('starts a new plan from a track without plan', async () => {
+    await renderApp();
+    await userEvent.click(await screen.findByRole('button', { name: 'Start plan' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Unplanned route' })).toBeInTheDocument();
+    expect(screen.getAllByTestId('checkpoint-row')).toHaveLength(2); // start and finish
+    expect(screen.getByTestId('unsaved')).toHaveTextContent('Not saved');
+    expect(window.location.search).toBe('?new');
+  });
+
+  it('downloads a new plan as plan file and offers its track, then shows it as saved', async () => {
+    await renderApp();
+    await userEvent.upload(await screen.findByLabelText('Choose GPX file'), gpxFile(gpx, 'Morning Loop.gpx'));
+    await screen.findByRole('heading', { level: 1, name: 'Morning loop' });
+    await userEvent.click(screen.getByRole('button', { name: 'Rename plan' }));
+    await userEvent.clear(screen.getByLabelText('Plan name'));
+    await userEvent.type(screen.getByLabelText('Plan name'), 'Saturday loop{Enter}');
+    expect(screen.getByRole('heading', { level: 1, name: 'Saturday loop' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Download plan' }));
+    expect(downloads[0].name).toBe('morning-loop.plan.json');
+    const file = JSON.parse(await downloads[0].content);
+    expect(file).toMatchObject({ format: 'brevet-planner-plan', name: 'Saturday loop', track: 'Morning Loop.gpx' });
+    expect(screen.queryByTestId('unsaved')).not.toBeInTheDocument();
+
+    const dialog = within(screen.getByRole('dialog', { name: 'Plan downloaded' }));
+    expect(dialog.getByText('morning-loop.plan.json')).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: 'Download GPX' })); // uploaded: not in the folder yet
+    expect(downloads[1].name).toBe('Morning Loop.gpx');
+    expect(await downloads[1].content).toBe(gpx);
+  });
+
+  it('downloads a saved plan under its file name, without offering the track again', async () => {
+    await renderApp();
+    await openSavedPlan();
+    await userEvent.click(screen.getByRole('button', { name: 'Download plan' }));
+    expect(downloads[0].name).toBe('line-200.plan.json');
+    expect(screen.getByRole('dialog', { name: 'Plan downloaded' })).not.toHaveTextContent('Download GPX');
+  });
+
+  it('asks before leaving a plan with unsaved changes', async () => {
+    await renderApp();
+    await openSavedPlan();
+    const tight = screen.getByLabelText('Tight below (min)');
+    await userEvent.clear(tight);
+    await userEvent.type(tight, '30{Enter}');
+    expect(screen.getByTestId('unsaved')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /switch plan/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'All plans' }));
+    const dialog = within(screen.getByRole('dialog', { name: 'Unsaved changes' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Stay' }));
+    expect(screen.getByRole('heading', { level: 1, name: 'Line 200 – spring' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('link', { name: /brevet planner/i }));
+    await userEvent.click(within(screen.getByRole('dialog', { name: 'Unsaved changes' })).getByRole('button', { name: 'Discard changes' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Route plans' })).toBeInTheDocument();
+    expect(downloads).toHaveLength(0);
+  });
+
+  it('switches between saved plans with the plan menu', async () => {
+    const other = lineGpx('Short line', 60);
+    await renderApp(
+      repository({
+        'short.gpx': other,
+        'short.plan.json': JSON.stringify(planFileFor(other, 'short.gpx', { name: 'Short line', checkpointKm: 30 })),
+      }),
+    );
+    await openSavedPlan();
+    await userEvent.click(screen.getByRole('button', { name: /switch plan/ }));
+    const current = screen.getByRole('button', { name: /Line 200 – spring/, current: true });
+    expect(current).toHaveTextContent('210.0 km');
+    await userEvent.click(screen.getByRole('button', { name: /^Short line/ }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Short line' })).toBeInTheDocument();
+    expect(window.location.search).toBe('?plan=short');
+  });
+
+  it('returns to the start screen with the browser back button', async () => {
+    await renderApp();
+    await openSavedPlan();
+    await act(async () => {
+      window.history.back();
+      await new Promise((resolve) => window.addEventListener('popstate', resolve, { once: true }));
+    });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Route plans' })).toBeInTheDocument();
   });
 });
 

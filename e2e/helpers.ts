@@ -18,8 +18,9 @@ export async function stubTiles(page: Page): Promise<string[]> {
   return requested;
 }
 
+/** Starts a new plan from the sample GPX on the start screen */
 export async function uploadSample(page: Page) {
-  await page.getByLabel('Upload GPX').setInputFiles(SAMPLE_GPX);
+  await page.getByLabel('Choose GPX file').setInputFiles(SAMPLE_GPX);
   await expect(page.getByRole('heading', { level: 1, name: 'Sample loop' })).toBeVisible();
 }
 

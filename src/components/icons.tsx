@@ -80,3 +80,11 @@ export const EarlyIcon = (props: SVGProps<SVGSVGElement>) => (
 export const LateIcon = (props: SVGProps<SVGSVGElement>) => (
   <SmallIcon d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15 9l-6 6M9 9l6 6" {...props} />
 );
+
+export const EditIcon = (props: SVGProps<SVGSVGElement>) => (
+  <SmallIcon d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" {...props} />
+);
+
+export const DownloadIcon = (props: SVGProps<SVGSVGElement>) => (
+  <SmallIcon d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" {...props} />
+);

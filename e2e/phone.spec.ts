@@ -22,7 +22,7 @@ test.describe('Phone layout – map, elevation profile and timetable, read-only'
   test('shows only the map, the elevation profile and the timetable, without horizontal scrolling', async ({ page }) => {
     const header = (await page.locator('.app-header').boundingBox())!;
     expect(header.height).toBeLessThan(70); // one row
-    await expect(page.getByRole('button', { name: 'Upload GPX' })).toBeVisible(); // icon only, still named
+    await expect(page.getByRole('button', { name: 'Download plan' })).toBeVisible(); // icon only, still named
 
     // map first, then the profile, then the timetable
     const map = (await page.locator('.leaflet-container').boundingBox())!;

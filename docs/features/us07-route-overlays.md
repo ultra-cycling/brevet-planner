@@ -37,4 +37,5 @@ Therefore, provide an extendible overlay-mechnism that allows for further overla
 - The start is entered as wall-clock time; to compare it with the sun it needs the time zone of the start, chosen in
   the plan settings (default: the browser's). Elapsed time is real time, so a DST change during the ride doesn't
   matter for the overlay.
-- The overlay selection is held in memory, like the rest of the plan (see [US5](us05-multiple-route-plans.md)).
+- The time zone is saved in the plan file ([US5](us05-multiple-route-plans.md)); the overlay selection is a view
+  setting and not saved.

@@ -32,4 +32,5 @@ Changing the start time should update the timetable
 - The timetable domain stays in minutes after the start; clock times are only a display
   (`src/components/timetable/useTimeFormat.ts`).
 - With weekdays the *Depart* column is hidden below a plan column width of 900 px (instead of 780 px).
-- Start, threshold and display are held in memory until plans are persisted ([US5](us05-multiple-route-plans.md)).
+- Start and tight threshold are saved in the plan file ([US5](us05-multiple-route-plans.md)); the time display is a
+  view setting and not saved.

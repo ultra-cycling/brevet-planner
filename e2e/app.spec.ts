@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('application start', () => {
-  test('loads config.yaml and shows the empty planner', async ({ page }) => {
+  test('loads config.yaml and shows the start screen', async ({ page }) => {
     const configResponse = page.waitForResponse((r) => r.url().endsWith('/config.yaml'));
     await page.goto('./');
 
@@ -10,13 +10,13 @@ test.describe('application start', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.getByRole('link', { name: 'Brevet Planner' })).toBeVisible();
     await expect(page.getByRole('combobox', { name: 'Language' })).toHaveValue('en');
-    await expect(page.getByRole('heading', { level: 1, name: 'No track yet' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Route plans' })).toBeVisible();
   });
 
   test('uses defaults when config.yaml is missing', async ({ page }) => {
     await page.route('**/config.yaml', (route) => route.fulfill({ status: 404, body: '' }));
     await page.goto('./');
-    await expect(page.getByRole('heading', { level: 1, name: 'No track yet' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Route plans' })).toBeVisible();
   });
 
   test('explains why it cannot start when config.yaml is invalid', async ({ page }) => {

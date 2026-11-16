@@ -120,7 +120,7 @@ interface CheckpointMarkerProps {
  * Escape cancels the drag, and a rejected drop puts it back (US9).
  */
 function CheckpointMarker({ checkpoint: cp, track, onClick, onMove, onDrag }: CheckpointMarkerProps) {
-  const drag = useRef<{ origin: LatLng; distanceKm: number } | null>(null);
+  const drag = useRef<{ origin: LatLng; distanceKm: number; cancelled: boolean } | null>(null);
   const markerRef = useRef<LeafletMarker>(null);
   const onDragRef = useRef(onDrag);
   useEffect(() => {
@@ -129,17 +129,25 @@ function CheckpointMarker({ checkpoint: cp, track, onClick, onMove, onDrag }: Ch
   // a new array on every render would make react-leaflet move the marker back while it is being dragged
   const position = useMemo<[number, number]>(() => [cp.lat, cp.lon], [cp.lat, cp.lon]);
 
-  // Escape while dragging: stop the drag (disabling ends it in Leaflet – without a dragend event) and put the marker back
+  // Escape while dragging: end the drag like a drop – so Leaflet also stops panning the map at its edge – but marked as
+  // cancelled, so the dragend handler puts the marker back instead of moving the checkpoint. Leaflet has no public
+  // cancel; `finishDrag` of the marker's draggable is internal API, hence the fallback.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const marker = markerRef.current;
       const state = drag.current;
       if (e.key !== 'Escape' || !state || !marker?.dragging) return;
-      drag.current = null;
-      marker.dragging.disable();
-      marker.setLatLng(state.origin);
-      marker.dragging.enable();
-      onDragRef.current?.(null);
+      state.cancelled = true;
+      const draggable = (marker.dragging as unknown as { _draggable?: { finishDrag?: () => void } })._draggable;
+      if (draggable?.finishDrag) {
+        draggable.finishDrag(); // fires dragend
+      } else {
+        drag.current = null;
+        marker.dragging.disable();
+        marker.setLatLng(state.origin);
+        marker.dragging.enable();
+        onDragRef.current?.(null);
+      }
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
@@ -157,10 +165,10 @@ function CheckpointMarker({ checkpoint: cp, track, onClick, onMove, onDrag }: Ch
       eventHandlers={{
         click: () => onClick?.(cp.id),
         dragstart: (e) => {
-          drag.current = { origin: (e.target as LeafletMarker).getLatLng(), distanceKm: cp.distanceKm };
+          drag.current = { origin: (e.target as LeafletMarker).getLatLng(), distanceKm: cp.distanceKm, cancelled: false };
         },
         drag: (e) => {
-          if (!drag.current) return;
+          if (!drag.current || drag.current.cancelled) return;
           const marker = e.target as LeafletMarker;
           const { lat, lng } = marker.getLatLng();
           const snapped = snapToTrack(track, lat, lng);
@@ -174,8 +182,8 @@ function CheckpointMarker({ checkpoint: cp, track, onClick, onMove, onDrag }: Ch
           drag.current = null;
           onDrag?.(null);
           if (!state) return;
-          const accepted = onMove!(cp.id, state.distanceKm);
-          // a rejected drop: back to where it was (the position prop hasn't changed)
+          const accepted = !state.cancelled && onMove!(cp.id, state.distanceKm);
+          // a rejected or cancelled drop: back to where it was (the position prop hasn't changed)
           if (!accepted) marker.setLatLng(state.origin);
         },
       }}

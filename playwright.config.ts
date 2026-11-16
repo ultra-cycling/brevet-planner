@@ -26,7 +26,7 @@ export default defineConfig({
     // phone: read-only timetable cards (iteration 7) – the editing specs above target desktop and tablet
     {
       name: 'phone',
-      testMatch: /(phone|app)\.spec\.ts/,
+      testMatch: /(phone|app|plans)\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
     },
   ],

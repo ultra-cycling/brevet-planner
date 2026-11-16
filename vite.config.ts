@@ -2,6 +2,7 @@ import react from '@vitejs/plugin-react';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import { basePathFromSiteUrl, cnameFromSiteUrl } from './src/config/siteUrl.ts';
+import { plansIndexPlugin } from './tooling/plansIndex.ts';
 import { readSiteUrl } from './tooling/siteUrl.node.ts';
 
 /** Emits a CNAME file for GitHub Pages when the site runs on a custom domain. */
@@ -20,7 +21,7 @@ const siteUrl = readSiteUrl();
 
 export default defineConfig({
   base: basePathFromSiteUrl(siteUrl),
-  plugins: [react(), githubPagesCname(siteUrl)],
+  plugins: [react(), githubPagesCname(siteUrl), plansIndexPlugin()],
   css: {
     preprocessorOptions: {
       // Bootstrap 5 still uses @import and global Sass functions

@@ -649,3 +649,70 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
 path.track-hit:focus {
   outline: none;
 }
+
+// ---- Route plans (US5): start screen and plan menu ----
+
+.start-screen {
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+.plan-card {
+  display: block;
+  padding: 0.75rem 1rem;
+  border: 1px solid $line;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: $ink;
+  text-decoration: none;
+
+  &:is(a):hover,
+  &:is(a):focus-visible {
+    border-color: $route;
+    background: rgba($route, 0.04);
+  }
+
+  &:is(a):focus-visible {
+    outline: 2px solid $checkpoint;
+    outline-offset: 2px;
+  }
+
+  &.is-broken {
+    border-style: dashed;
+    background: $ground;
+  }
+}
+
+.plan-menu-toggle {
+  max-width: 22rem;
+
+  @include media-breakpoint-down(md) {
+    max-width: 11rem;
+  }
+}
+
+.plan-menu {
+  z-index: 1100; // above the map controls (Leaflet: 1000)
+  min-width: 18rem;
+  max-height: 70vh;
+  overflow-y: auto;
+
+  // dropdowns in a navbar are positioned statically by Bootstrap – on phones the menu spans the screen below the header
+  @include media-breakpoint-down(md) {
+    &.dropdown-menu {
+      position: fixed;
+      top: 3.25rem;
+      left: 0.5rem;
+      right: 0.5rem;
+      min-width: 0;
+    }
+  }
+}
+
+.unsaved-badge {
+  flex-shrink: 0;
+}
+
+.plan-name-input {
+  width: min(28rem, 100%);
+}

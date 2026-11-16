@@ -84,8 +84,13 @@ test.describe('US9 – move checkpoints', () => {
     await drag(page, await center(page, '.checkpoint-marker'), target, () => page.keyboard.press('Escape'));
 
     expect(await kmOf(page, 'CP1')).toBe(30);
-    const after = await offset();
-    expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeLessThan(2);
+    // the start marker (SVG layer) catches up with a map pan a moment later than the checkpoint marker
+    await expect
+      .poll(async () => {
+        const after = await offset();
+        return Math.hypot(after.x - before.x, after.y - before.y);
+      })
+      .toBeLessThan(2);
   });
 
   test('a checkpoint line is dragged by its number on the elevation profile', async ({ page }) => {

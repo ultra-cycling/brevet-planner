@@ -34,6 +34,5 @@ So that I can identify the checkpoints along the track
 - The nominal brevet distance is the largest standard distance ≤ track length + 5 %, otherwise "no fixed time limit".
 - Windows are shown as H:MM after the start until the start date/time arrives with [US6](us06-start-time.md).
   Overrides are stored per checkpoint and survive moving it.
-- Checkpoints are held in memory together with the track until plans are
-  persisted ([US5](us05-multiple-route-plans.md)).
+- Checkpoints are saved in the plan file with their distance along the track ([US5](us05-multiple-route-plans.md)).
 - Repositioning by drag and drop follows with [US9](us09-move-checkpoints.md).

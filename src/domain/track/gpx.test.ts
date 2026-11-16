@@ -74,10 +74,11 @@ describe('parseGpx', () => {
 });
 
 describe('parseGpxFile', () => {
-  it('uses the file name as fallback name', async () => {
+  it('uses the file name as fallback name and returns the file content', async () => {
     const xml = '<gpx><trk><trkseg><trkpt lat="1" lon="1"/><trkpt lat="1.1" lon="1"/></trkseg></trk></gpx>';
-    const track = await parseGpxFile(new File([xml], 'Paris-Brest.gpx'));
+    const { track, text } = await parseGpxFile(new File([xml], 'Paris-Brest.gpx'));
     expect(track.name).toBe('Paris-Brest');
+    expect(text).toBe(xml);
   });
 
   it('rejects files above the size limit before reading them', async () => {

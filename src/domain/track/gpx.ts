@@ -72,9 +72,10 @@ export function parseGpx(xml: string, fallbackName = 'Track'): Track {
   return buildTrack(name, raw, waypoints);
 }
 
-/** Reads and parses a GPX file chosen by the user. */
-export async function parseGpxFile(file: File): Promise<Track> {
+/** Reads and parses a GPX file chosen by the user; also returns its content (e.g. to save it with a plan, US5). */
+export async function parseGpxFile(file: File): Promise<{ track: Track; text: string }> {
   if (file.size > MAX_GPX_BYTES) throw new GpxError('tooLarge');
   const fallbackName = file.name.replace(/\.gpx$/i, '') || 'Track';
-  return parseGpx(await file.text(), fallbackName);
+  const text = await file.text();
+  return { track: parseGpx(text, fallbackName), text };
 }

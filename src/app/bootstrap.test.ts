@@ -7,7 +7,7 @@ describe('startApp', () => {
     const { services, i18n } = await startApp(async () => structuredClone(defaultConfig));
     expect(services.config).toEqual(defaultConfig);
     expect(services.estimators.has('speed-climb')).toBe(true);
-    expect(await services.planRepository.list()).toEqual([]);
+    expect(services.planRepository.capabilities.save).toBe(false); // plans folder: saved by downloading
     expect(i18n.t('app.name')).toBe('Brevet Planner');
     expect(document.documentElement.lang).toBe('en');
   });

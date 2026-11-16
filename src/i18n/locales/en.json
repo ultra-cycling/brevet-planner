@@ -10,12 +10,7 @@
   "languages": {
     "en": "English"
   },
-  "emptyState": {
-    "title": "No track yet",
-    "text": "Upload a GPX track to start planning your brevet: mark the checkpoints, estimate riding and rest times and get a timetable with control windows."
-  },
   "upload": {
-    "button": "Upload GPX",
     "choose": "Choose GPX file",
     "dropHint": "…or drop a .gpx file here",
     "errors": {
@@ -216,6 +211,53 @@
         "night": "Night"
       },
       "note": "When you are expected there according to the timetable, compared with sunrise and sunset at that place. Start time zone: {{zone}}."
+    }
+  },
+  "start": {
+    "title": "Route plans",
+    "newPlan": "New plan",
+    "newPlanText": "Upload a GPX track to start planning: mark the checkpoints, estimate riding and rest times and get a timetable with control windows.",
+    "savedPlans": "Saved plans",
+    "loading": "Loading plans…",
+    "listError": "The list of plans could not be loaded.",
+    "retry": "Try again",
+    "empty": "No saved plans yet.",
+    "noPlans": "No saved plans yet.",
+    "howTo": "To keep a plan, download it and put the .plan.json file together with its .gpx track into public/plans/ in the repository, then commit both files.",
+    "tracksWithoutPlan": "Tracks without plan",
+    "startPlan": "Start plan",
+    "checkpoints_one": "{{count}} checkpoint",
+    "checkpoints_other": "{{count}} checkpoints",
+    "brevet": "{{km}} km brevet"
+  },
+  "plans": {
+    "menu": "Plan: {{name}} – switch plan",
+    "newFromGpx": "New plan from GPX…",
+    "allPlans": "All plans",
+    "notSaved": "Not saved",
+    "download": "Download plan",
+    "loading": "Loading plan…",
+    "rename": "Rename plan",
+    "nameLabel": "Plan name",
+    "nameRequired": "Enter a name for the plan",
+    "unsaved": {
+      "title": "Unsaved changes",
+      "text": "“{{name}}” has changes that haven't been downloaded yet. Download the plan to keep them.",
+      "cancel": "Stay",
+      "discard": "Discard changes"
+    },
+    "downloaded": {
+      "title": "Plan downloaded",
+      "text": "Save <code>{{planFile}}</code> in <code>public/plans/</code> next to <code>{{trackFile}}</code> and commit it – the plan then appears on the start screen.",
+      "trackMissing": "The track <code>{{trackFile}}</code> isn't in the plans folder yet – download it as well and put it next to the plan.",
+      "downloadTrack": "Download GPX",
+      "close": "Done"
+    },
+    "errors": {
+      "notFound": "The plan “{{name}}” was not found.",
+      "invalid": "The plan “{{name}}” can't be opened: {{reason}}",
+      "track": "The track of “{{name}}” can't be read: {{reason}}",
+      "unavailable": "“{{name}}” could not be loaded – the plans folder is not available."
     }
   }
 }

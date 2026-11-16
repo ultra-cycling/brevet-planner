@@ -60,6 +60,16 @@ npm run preview      # serve dist/ like GitHub Pages: http://localhost:4173/brev
   `package-lock.json`. CI runs `npm ci`, which fails if `package.json` and the lockfile are out of sync.
 - The GPX fixture for the browser tests is generated: `node tooling/generate-sample-gpx.ts`.
 
+## Route plans
+
+Plans are files in [`public/plans/`](public/plans): a GPX track and its plan, `<name>.plan.json`, which refers to the
+track by file name. The start screen lists the plans (and GPX files without a plan); the deployed site shows the
+committed plans read-only.
+
+To keep a plan: click **Download plan** in the header, put the downloaded `.plan.json` into `public/plans/` (for an
+uploaded track also the GPX, offered in the dialog) and commit both files. With `npm run dev` a reload shows them on the
+start screen. Details: [docs/features/us05-multiple-route-plans.md](docs/features/us05-multiple-route-plans.md).
+
 ## Configuration
 
 The app reads [`public/config.yaml`](public/config.yaml) at start-up: default language, map tiles, storage backend

@@ -1,0 +1,73 @@
+{
+  "format": "brevet-planner-plan",
+  "version": 1,
+  "name": "G – Bodensee – G (300 km sample)",
+  "track": "300km-sample-route.gpx",
+  "createdAt": "2026-11-16T12:00:00.000Z",
+  "updatedAt": "2026-11-16T12:00:00.000Z",
+  "summary": {
+    "distanceKm": 309.3,
+    "climbM": 727,
+    "checkpoints": 2
+  },
+  "brevetKm": 300,
+  "start": {
+    "date": "2027-05-01",
+    "time": "06:00"
+  },
+  "timeZone": "Europe/Berlin",
+  "tightBufferMin": 75,
+  "timeModel": {
+    "id": "speed-climb",
+    "params": {
+      "speedKmh": 28,
+      "climbRateMh": 700
+    }
+  },
+  "checkpoints": [
+    {
+      "id": "start",
+      "kind": "start",
+      "name": "",
+      "source": "track",
+      "distanceKm": 0,
+      "restMin": 0,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "cp-100",
+      "kind": "control",
+      "name": "Control 1 (placeholder)",
+      "source": "km",
+      "distanceKm": 100,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "cp-200",
+      "kind": "control",
+      "name": "Control 2 (placeholder)",
+      "source": "km",
+      "distanceKm": 200,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "finish",
+      "kind": "finish",
+      "name": "",
+      "source": "track",
+      "distanceKm": 309.2721,
+      "restMin": 0,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    }
+  ]
+}

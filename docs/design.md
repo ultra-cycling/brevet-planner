@@ -32,7 +32,7 @@ verify them. Iterations and architecture: [plan.md](plan.md).
 | US7  | [Overlay for route in map](features/us07-route-overlays.md)                                      | colour the route by e.g. road gradient or daylight            | ✅ Done    |
 | US8  | [Show trackpoint tooltip](features/us08-trackpoint-tooltip.md)                                   | see distance and expected times when hovering the route       | ✅ Done    |
 | US9  | [Move existing checkpoints](features/us09-move-checkpoints.md)                                   | drag checkpoints along the track on the map and the profile   | ✅ Done    |
-| US5  | [Allow storing multiple route plans](features/us05-multiple-route-plans.md)                      | store several plans and switch between them                   | Postponed |
+| US5  | [Manage multiple route plans](features/us05-multiple-route-plans.md)                             | keep several plans and choose one on a start screen           | ✅ Done    |
 | US10 | [PDF export of the legs](features/us10-pdf-export.md)                                            | export the legs with profile and times as PDF                 | Backlog   |
 | US11 | [Overlapping track sections](features/us11-overlapping-track-sections.md)                        | see passages ridden twice as parallel lines with arrows       | Backlog   |
 | US12 | [Realistic climb from terrain data](features/us12-elevation-from-terrain-data.md)                | get the climb from terrain data, not only from the GPX        | Backlog   |
@@ -57,10 +57,11 @@ verify them. Iterations and architecture: [plan.md](plan.md).
 
 - Use OpenStreet map cycling cards for the rendering of the maps
 
-### In-browser local storage
+### Storage
 
-- use the in-browser local storage to store route planning
-- prepare for storing data in a server backend later on
+- for now, route plans and their GPX tracks are stored as files in the git repository (`public/plans/`); the app
+  reads them, plans are saved by downloading the plan file and committing it
+- prepare for storing data in a database / server backend later on
 - abstract storage so that storage backend is replaceable
 
 ### Deployment

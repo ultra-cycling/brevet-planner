@@ -15,9 +15,24 @@ So that climb, riding times and the elevation profile are realistic and comparab
 - The climb is summed with a 5 m hysteresis (`cumulativeAscentDescent` in `src/domain/track/geo.ts`): a change only
   counts once it is at least 5 m away from the last counted elevation. This suppresses GPS noise in *recorded*
   tracks, but on *planned* tracks with smooth elevations it also drops every real roller smaller than 5 m.
-- Observation: a 300 km sample track shows 740 m climb in the app, other route planners show about 1400 m.
-  Possible causes, to be confirmed with that file: elevations in the GPX are missing, sparse or coarse (e.g. only
-  every few hundred metres or rounded), and/or the hysteresis removes many small climbs.
+- Reference track: [`public/plans/300km-sample-route.gpx`](../../public/plans/300km-sample-route.gpx) (Komoot export
+  "G - Bodensee - G", available as plan on the start screen, see [US5](us05-multiple-route-plans.md)). Komoot shows
+  about 1 400 m of climb.
+- Measured on that track (2026-11-16): 309.3 km, 7 079 points (one every ~44 m), every point has a smooth elevation
+  from Komoot's terrain model (several decimals).
+
+  | Calculation | Climb |
+  |-------------|-------|
+  | current: 5 m hysteresis | 727 m |
+  | 3 m / 2 m / 1 m hysteresis | 840 m / 945 m / 1 050 m |
+  | sum of all rises, no threshold | 1 191 m |
+  | Komoot | ~1 400 m |
+
+  So the hysteresis loses ~460 m on this kind of data; the remaining ~200 m are most likely due to the export's
+  sampling (Komoot calculates on a denser terrain model than the exported points). Baseline test:
+  [sampleRoute.test.ts](../../src/domain/track/sampleRoute.test.ts) – *has a climb of about 730 m with the current
+  calculation (US12 baseline)*; the target is an expected failure there (*has a climb within ±10 % of Komoot (1 400 m) –
+  fixed by US12*) that turns into a passing test once this story is done.
 
 The climb feeds the riding time (time model: climb / climb rate), the segment climb, the gradient overlay and the
 position tooltip – so the error propagates into the whole timetable.
@@ -37,8 +52,8 @@ Proposed – refined at the start of the iteration (see open questions).
 
 ## Open questions
 
-- **Reference values:** please add the 300 km sample GPX to the repository as a test fixture (if it may be
-  published) and name the planner(s) that show ~1400 m – planners differ among themselves by 10–15 %.
+- **Reference values:** the 300 km sample is in the repository; are there further tracks (e.g. a recorded one, a
+  hilly one) to calibrate against, and does the ±10 % refer to Komoot only?
 - **Data source:** terrain tiles (e.g. the free "Terrarium"/Terrain-RGB elevation tiles, loaded like map tiles,
   ~30 m resolution) or an elevation API (e.g. OpenTopoData)? Tiles need no API key and reveal no more than the map
   tiles do; an API receives the whole track and has rate limits.

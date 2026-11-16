@@ -1,6 +1,7 @@
 import { DEFAULT_SITE_URL } from './siteUrl';
 
-export type StorageBackend = 'localStorage';
+/** `files`: plans and GPX tracks in the `plans/` folder of the site (public/plans/ in the repository) */
+export type StorageBackend = 'files';
 
 export interface TimeModelConfig {
   id: string;
@@ -21,7 +22,7 @@ export interface AppConfig {
   };
 }
 
-export const STORAGE_BACKENDS: readonly StorageBackend[] = ['localStorage'];
+export const STORAGE_BACKENDS: readonly StorageBackend[] = ['files'];
 
 export const defaultConfig: AppConfig = {
   site: { url: DEFAULT_SITE_URL },
@@ -34,7 +35,7 @@ export const defaultConfig: AppConfig = {
       '<a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases">CyclOSM</a> | ' +
       'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   },
-  storage: { backend: 'localStorage' },
+  storage: { backend: 'files' },
   planning: {
     defaultStartTime: '06:00',
     tightBufferMinutes: 75,

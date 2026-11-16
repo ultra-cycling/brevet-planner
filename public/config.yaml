@@ -24,8 +24,11 @@ map:
     Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors
 
 storage:
-  # Where route plans are stored. Currently supported: localStorage
-  backend: localStorage
+  # Where route plans are stored. Currently supported:
+  #   files – plan files (<name>.plan.json) and GPX tracks in the plans/ folder of the site
+  #           (public/plans/ in the repository); plans are saved by downloading the plan file
+  #           and committing it to that folder
+  backend: files
 
 planning:
   # Defaults for new plans – every plan can override them.

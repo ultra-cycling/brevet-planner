@@ -6,7 +6,7 @@ import { defaultConfig, type AppConfig } from '../config/schema';
 import { createDefaultOverlayRegistry } from '../domain/overlays/registry';
 import { createDefaultEstimatorRegistry } from '../domain/time/registry';
 import { initI18n } from '../i18n';
-import { LocalStoragePlanRepository } from '../storage/LocalStoragePlanRepository';
+import { InMemoryPlanRepository } from '../storage/InMemoryPlanRepository';
 
 /** Renders a component with the same providers as the app, using test-friendly services. */
 export async function renderWithServices(ui: ReactElement, overrides: Partial<AppServices> = {}) {
@@ -15,7 +15,7 @@ export async function renderWithServices(ui: ReactElement, overrides: Partial<Ap
     config,
     estimators: createDefaultEstimatorRegistry(),
     overlays: createDefaultOverlayRegistry(),
-    planRepository: new LocalStoragePlanRepository(localStorage, 'test'),
+    planRepository: new InMemoryPlanRepository(),
     ...overrides,
   };
   const i18n = await initI18n(config.i18n);

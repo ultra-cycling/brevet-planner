@@ -62,7 +62,7 @@ test.describe('US1 – show a track on a map', () => {
     await expect(page.locator('path.track-highlight')).toHaveCount(1);
   });
 
-  test('an invalid file shows an error and keeps the empty state', async ({ page }) => {
+  test('an invalid file shows an error and stays on the start screen', async ({ page }) => {
     await page.goto('./');
     await page.getByLabel('Choose GPX file').setInputFiles({
       name: 'broken.gpx',
@@ -70,7 +70,7 @@ test.describe('US1 – show a track on a map', () => {
       buffer: Buffer.from('<gpx><trk></trk></gpx>'),
     });
     await expect(page.getByRole('alert')).toContainText('no track or route');
-    await expect(page.getByRole('heading', { name: 'No track yet' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'New plan' })).toBeVisible();
   });
 
   test('the planner fits the viewport without horizontal scrolling', async ({ page }) => {

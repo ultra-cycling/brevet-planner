@@ -1,349 +1,274 @@
-import { useCallback, useMemo, useReducer, useState } from 'react';
-import { Alert, Container } from 'react-bootstrap';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Badge, Button, Spinner } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
-import {
-  checkpointReducer,
-  controlRows,
-  emptyCheckpointState,
-  findCheckpointNear,
-  moveConflict,
-  type CheckpointSource,
-} from '../domain/checkpoints';
-import { acpControlRules } from '../domain/controls/acp';
-import { buildSegments } from '../domain/segments';
-import { distanceByClass } from '../domain/overlays/RouteOverlay';
-import { timesAlongTrack, timesAt } from '../domain/timeAlongTrack';
-import { localDate, type RideStart } from '../domain/time/clock';
-import { browserTimeZone, startInstantUtc } from '../domain/time/timeZone';
-import { resolveParams, type EstimatorParams } from '../domain/time/TimeEstimator';
-import { buildTimetable } from '../domain/timetable';
-import { positionAtDistance, snapToTrack, trackSlice } from '../domain/track/snap';
-import { nearestPointIndex, type Track } from '../domain/track/track';
-import { useFormat } from '../i18n/useFormat';
-import { AppHeader } from './AppHeader';
-import { CheckpointPanel } from './checkpoints/CheckpointPanel';
-import { useControlLabel } from './checkpoints/useControlLabel';
 import { useAppServices } from '../app/AppServices';
-import { SegmentStrip, type SegmentView } from './segments/SegmentStrip';
-import { PlanSettingsBar } from './timetable/PlanSettingsBar';
-import { TimetableCards } from './timetable/TimetableCards';
-import { useTimeFormat, type TimeDisplay } from './timetable/useTimeFormat';
-import { PHONE_QUERY, useMediaQuery } from './hooks/useMediaQuery';
-import { ElevationProfile } from './track/ElevationProfile';
-import { GpxDropZone } from './track/GpxDropZone';
-import { RouteOverlayPanel } from './track/RouteOverlayPanel';
-import { PositionInfo } from './track/PositionInfo';
-import { TrackMap, type OverlayLine } from './track/TrackMap';
-import { TrackSummary } from './track/TrackSummary';
-import { useGpxImport } from './track/useGpxImport';
+import { acpControlRules } from '../domain/controls/acp';
+import { PlanFileError, planFileId, planStateFromFile, PLAN_FILE_SUFFIX, toPlanFile } from '../domain/planFile';
+import { newPlanState, type PlanAction, type PlanDefaults } from '../domain/planState';
+import { localDate } from '../domain/time/clock';
+import { browserTimeZone } from '../domain/time/timeZone';
+import { resolveParams } from '../domain/time/TimeEstimator';
+import { GpxError, parseGpx } from '../domain/track/gpx';
+import type { Track } from '../domain/track/track';
+import { downloadFile } from '../storage/downloadFile';
+import { PlanStorageError } from '../storage/PlanRepository';
+import { AppHeader } from './AppHeader';
+import { DownloadIcon } from './icons';
+import { DownloadDialog, UnsavedChangesDialog } from './plans/PlanDialogs';
+import { PlanMenu } from './plans/PlanMenu';
+import { usePlanListing } from './plans/usePlanListing';
+import { sameRoute, START_ROUTE, usePlanRoute, type PlanRoute } from './plans/usePlanRoute';
+import { usePlanSession } from './plans/usePlanSession';
+import { PlannerView } from './planner/PlannerView';
+import { StartScreen } from './start/StartScreen';
+import { useGpxImport, type GpxSource } from './track/useGpxImport';
 
 /** Control rules used for the windows – selectable per plan once other rules exist */
 const rules = acpControlRules;
 
+/** Where the user wants to go – may have to wait for the unsaved-changes dialog */
+type Target =
+  | { kind: 'route'; route: PlanRoute }
+  | { kind: 'upload'; track: Track; source: GpxSource }
+  | { kind: 'track'; file: string };
+
+const baseName = (file: string) => file.replace(/\.gpx$/i, '');
+
+/**
+ * Application shell (US5): start screen or the open plan, the plan menu in the header, the URL of the plan and the
+ * question about unsaved changes before leaving a plan.
+ */
 export function App() {
   const { t } = useTranslation();
-  const format = useFormat();
-  const controlLabel = useControlLabel();
-  const [track, setTrack] = useState<Track | null>(null);
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [checkpointState, dispatch] = useReducer(checkpointReducer, emptyCheckpointState);
-  const [announcement, setAnnouncement] = useState('');
-  // phones: read-only view – map, elevation profile and timetable cards only (docs/plan.md → Phone layout)
-  const isPhone = useMediaQuery(PHONE_QUERY);
-  const [activeSegment, setActiveSegment] = useState<number | null>(null);
-  // checkpoint being dragged on the map – shown on the profile as well (US9)
-  const [mapDrag, setMapDrag] = useState<{ id: string; distanceKm: number } | null>(null);
-  const { config, estimators, overlays } = useAppServices();
-  // plan-wide time model (defaults from config.yaml) – persisted with the plan in US5
-  const [timeModel, setTimeModel] = useState(() => {
-    const { id, params } = config.planning.timeModel;
-    return { id, params: resolveParams(estimators.get(id), params) };
-  });
-  const estimator = estimators.get(timeModel.id);
-  const defaultRestMin = config.planning.defaultRestMinutes;
-  // start and tight threshold of the plan (US6) – persisted with the plan in US5
-  const [start, setStart] = useState<RideStart>(() => ({ date: localDate(), time: config.planning.defaultStartTime }));
-  const [tightBufferMin, setTightBufferMin] = useState(config.planning.tightBufferMinutes);
-  const [timeDisplay, setTimeDisplay] = useState<TimeDisplay>('clock');
-  const [timeZone, setTimeZone] = useState(browserTimeZone);
-  const [overlayId, setOverlayId] = useState<string | null>(null);
-  const overlay = (overlayId && overlays.get(overlayId)) || null;
+  const { config, estimators, planRepository } = useAppServices();
+  const { session, dispatch, dirty } = usePlanSession();
+  const { listing, error: listingError, reload } = usePlanListing();
+  const [pending, setPending] = useState<Target | null>(null);
+  const [downloaded, setDownloaded] = useState<{ planFile: string; trackFile: string; trackMissing: boolean } | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const onTrack = useCallback((next: Track) => {
-    setTrack(next);
-    setActiveIndex(null);
-    dispatch({ type: 'reset', track: next, brevetKm: rules.inferBrevetKm(next.distanceKm) });
-    setActiveSegment(null);
-    setAnnouncement('');
-  }, []);
-  const { importFile, error, clearError, busy } = useGpxImport(onTrack);
+  const sessionRoute: PlanRoute | null = session
+    ? session.plan.id
+      ? { plan: session.plan.id, isNew: false }
+      : { plan: null, isNew: true }
+    : null;
 
-  const rows = useMemo(() => controlRows(checkpointState, rules), [checkpointState]);
-  const segments = useMemo(
-    () => (track ? buildSegments(track, checkpointState.checkpoints) : []),
-    [track, checkpointState.checkpoints],
+  // back/forward: ask first when leaving a plan with unsaved changes
+  const onPop = useCallback(
+    (next: PlanRoute) => {
+      if (dirty && sessionRoute && !sameRoute(next, sessionRoute)) {
+        setPending({ kind: 'route', route: next });
+        return false;
+      }
+      return true;
+    },
+    [dirty, sessionRoute],
   );
-  const timetable = useMemo(
-    () => buildTimetable(rows, segments, estimator, timeModel.params),
-    [rows, segments, estimator, timeModel.params],
-  );
-  // latest point in time shown in the timetable – decides whether clock times need the weekday
-  const lastMin = useMemo(
-    () => Math.max(0, ...timetable.rows.map((r) => Math.max(r.arrivalMin, r.control.window.closeMin))),
-    [timetable],
-  );
-  const times = useTimeFormat(start, timeDisplay, lastMin);
-  const clock = useTimeFormat(start, 'clock', lastMin);
-  const segmentViews: SegmentView[] = useMemo(() => {
-    const shortName = (id: string) => {
-      const row = rows.find((r) => r.checkpoint.id === id)!;
-      return row.number === null ? t(`checkpoints.${row.checkpoint.kind}`) : t('checkpoints.cp', { number: row.number });
-    };
-    return segments.map((segment) => ({
-      segment,
-      name: `${shortName(segment.from.id)} → ${shortName(segment.to.id)}`,
-      rideMin: timetable.rows[segment.index + 1].rideMin ?? 0,
-    }));
-  }, [segments, rows, timetable, t]);
-  // expected times at every track point – for the overlays (US7) and the position tooltip (US8)
-  const trackTimes = useMemo(
-    () => (track ? timesAlongTrack(track, timetable, estimator) : null),
-    [track, timetable, estimator],
-  );
-  // route overlay (US7): classes along the track, drawn as one line per run
-  const overlayResult = useMemo(() => {
-    if (!track || !overlay || !trackTimes) return null;
-    const runs = overlay.classify({
-      track,
-      minutesAt: trackTimes.atMin,
-      startUtcMs: startInstantUtc(start, timeZone),
-    });
-    if (!runs) return { lines: null, distances: null };
-    const colors = new Map(overlay.classes.map((c) => [c.key, c.color]));
-    const lines: OverlayLine[] = runs.map((run) => ({
-      key: `${run.from}-${run.classKey}`,
-      classKey: run.classKey,
-      color: colors.get(run.classKey)!,
-      positions: track.points.slice(run.from, run.to + 1).map((p) => [p.lat, p.lon] as [number, number]),
-    }));
-    return { lines, distances: distanceByClass(track, runs) };
-  }, [track, overlay, trackTimes, start, timeZone]);
-  // a removed checkpoint may leave the highlight pointing past the last segment
-  const highlighted = activeSegment !== null ? (segments[activeSegment] ?? null) : null;
-  const highlightPath = useMemo(
-    () => (track && highlighted ? trackSlice(track, highlighted.startKm, highlighted.endKm) : null),
-    [track, highlighted],
+  const { route, navigate } = usePlanRoute(onPop);
+
+  const defaultsFor = useCallback(
+    (track: Track): PlanDefaults => {
+      const { id, params } = config.planning.timeModel;
+      return {
+        start: { date: localDate(), time: config.planning.defaultStartTime },
+        timeZone: browserTimeZone(),
+        tightBufferMin: config.planning.tightBufferMinutes,
+        timeModel: { id, params: resolveParams(estimators.get(id), params) },
+        brevetKm: rules.inferBrevetKm(track.distanceKm),
+      };
+    },
+    [config, estimators],
   );
 
-  /** Adds an intermediate control at a distance along the track; false if one is already there */
-  const addCheckpoint = (distanceKm: number, source: CheckpointSource): boolean => {
-    if (!track) return false;
-    const position = positionAtDistance(track, distanceKm);
-    if (findCheckpointNear(checkpointState.checkpoints, position.distanceKm)) {
-      setAnnouncement(t('checkpoints.duplicate'));
-      return false;
+  const errorText = useCallback(
+    (error: unknown, what: string) => {
+      if (error instanceof PlanStorageError && error.code === 'notFound') return t('plans.errors.notFound', { name: what });
+      if (error instanceof PlanFileError) return t('plans.errors.invalid', { name: what, reason: error.message });
+      if (error instanceof GpxError) return t('plans.errors.track', { name: what, reason: t(`upload.errors.${error.code}`) });
+      return t('plans.errors.unavailable', { name: what });
+    },
+    [t],
+  );
+
+  /** Opens a saved plan from the repository */
+  const loadPlan = useCallback(
+    async (id: string) => {
+      setLoadingId(id);
+      try {
+        const stored = await planRepository.load(id);
+        const track = parseGpx(stored.gpx, baseName(stored.plan.track));
+        const plan = planStateFromFile(stored.plan, track, id, estimators);
+        dispatch({ type: 'open', plan, gpx: stored.gpx, trackInRepo: true, saved: true });
+      } catch (error) {
+        console.error(error);
+        setMessage(errorText(error, id));
+        navigate(START_ROUTE, { replace: true });
+      } finally {
+        setLoadingId(null);
+      }
+    },
+    [planRepository, estimators, dispatch, errorText, navigate],
+  );
+
+  // keep the open plan in line with the URL (initial load, links, back/forward)
+  useEffect(() => {
+    if (route.plan) {
+      if (session?.plan.id !== route.plan && loadingId !== route.plan) void loadPlan(route.plan);
+    } else if (route.isNew) {
+      // a new plan can't be restored after a reload
+      if (!session || session.plan.id !== null) navigate(START_ROUTE, { replace: true });
+    } else if (session) {
+      dispatch({ type: 'close' });
     }
-    const id = crypto.randomUUID();
-    dispatch({ type: 'add', id, position, source, restMin: defaultRestMin });
-    const number = checkpointState.checkpoints.filter((cp) => cp.kind === 'control' && cp.distanceKm < position.distanceKm).length + 1;
-    setAnnouncement(t('checkpoints.added', { control: t('checkpoints.cp', { number }), km: format.km(position.distanceKm) }));
-    return true;
+    // only on route changes: session and loading state are read, not reacted to
+  }, [route]);
+
+  // back on the start screen: the folder may have changed (dev server)
+  const onStart = session === null;
+  useEffect(() => {
+    if (onStart) void reload();
+  }, [onStart, reload]);
+
+  // focus the heading of the new screen (screen readers, keyboard)
+  const screenKey = session ? (session.plan.id ?? `new-${session.plan.createdAt}`) : 'start';
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    requestAnimationFrame(() => document.getElementById(session ? 'track-name' : 'start-heading')?.focus());
+  }, [screenKey]);
+
+  // reloading or closing the tab with unsaved changes
+  useEffect(() => {
+    if (!dirty) return;
+    const listener = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener('beforeunload', listener);
+    return () => window.removeEventListener('beforeunload', listener);
+  }, [dirty]);
+
+  const go = async (target: Target) => {
+    setMessage(null);
+    switch (target.kind) {
+      case 'route':
+        navigate(target.route);
+        break;
+      case 'upload':
+        dispatch({
+          type: 'open',
+          plan: newPlanState(target.track, target.source.fileName, defaultsFor(target.track)),
+          gpx: target.source.text,
+          trackInRepo: false,
+          saved: false,
+        });
+        navigate({ plan: null, isNew: true });
+        break;
+      case 'track':
+        try {
+          const gpx = await planRepository.loadTrack(target.file);
+          const track = parseGpx(gpx, baseName(target.file));
+          dispatch({ type: 'open', plan: newPlanState(track, target.file, defaultsFor(track)), gpx, trackInRepo: true, saved: false });
+          navigate({ plan: null, isNew: true });
+        } catch (error) {
+          console.error(error);
+          setMessage(errorText(error, target.file));
+        }
+        break;
+    }
+  };
+  /** Leaves the current plan – after asking if it has unsaved changes */
+  const request = (target: Target) => (dirty ? setPending(target) : void go(target));
+
+  const { importFile, error: uploadError, busy } = useGpxImport((track, source) => request({ kind: 'upload', track, source }));
+
+  const downloadPlan = () => {
+    if (!session) return;
+    const id = session.plan.id ?? planFileId(baseName(session.plan.trackFile));
+    const planFile = `${id}${PLAN_FILE_SUFFIX}`;
+    downloadFile(planFile, `${JSON.stringify(toPlanFile(session.plan), null, 2)}\n`, 'application/json');
+    dispatch({ type: 'saved' });
+    setDownloaded({ planFile, trackFile: session.plan.trackFile, trackMissing: !session.trackInRepo });
   };
 
-  /**
-   * Moves an intermediate control along the track (drag and drop, km input). Returns an error message if it can't be
-   * placed there: outside the track or within 100 m of another checkpoint.
-   */
-  const moveCheckpoint = (id: string, distanceKm: number): string | null => {
-    if (!track) return null;
-    const row = rows.find((r) => r.checkpoint.id === id);
-    if (!row || row.checkpoint.kind !== 'control') return null;
-    const position = positionAtDistance(track, distanceKm);
-    const conflict = moveConflict(checkpointState.checkpoints, id, position.distanceKm);
-    if (conflict) {
-      const blocking = rows.find((r) => r.checkpoint.id === conflict.id)!;
-      const message = t('checkpoints.moveTooClose', { control: controlLabel(blocking) });
-      setAnnouncement(message);
-      return message;
-    }
-    dispatch({ type: 'move', id, position });
-    const number =
-      checkpointState.checkpoints.filter((cp) => cp.kind === 'control' && cp.id !== id && cp.distanceKm < position.distanceKm)
-        .length + 1;
-    setAnnouncement(
-      t('checkpoints.moved', {
-        from: controlLabel(row),
-        control: t('checkpoints.cp', { number }),
-        km: format.km(position.distanceKm),
-      }),
-    );
-    return null;
-  };
-  const onCheckpointDrop = (id: string, distanceKm: number) => moveCheckpoint(id, distanceKm) === null;
-
-  const mapCheckpoints = rows.flatMap((row) =>
-    row.number === null
-      ? []
-      : [
-          {
-            id: row.checkpoint.id,
-            number: row.number,
-            label: `${controlLabel(row)} · ${format.km(row.checkpoint.distanceKm)}`,
-            lat: row.checkpoint.lat,
-            lon: row.checkpoint.lon,
-            tag: String(row.number),
-            distanceKm: row.checkpoint.distanceKm,
-          },
-        ],
-  );
-
-  const errorAlert = error && (
-    <Alert variant="danger" dismissible onClose={clearError} className="mb-0">
-      {t(`upload.errors.${error}`)}
-    </Alert>
-  );
+  const onPlanChange = useCallback((action: PlanAction) => dispatch({ type: 'plan', action }), [dispatch]);
 
   return (
-    <div className={`app-shell${track ? ' has-track' : ''}`}>
-      <AppHeader onGpxFile={(file) => void importFile(file)} busy={busy} />
-      {track ? (
-        <main className="planner">
-          {/* left column: the plan – scrolls on its own while the map stays in place */}
-          {isPhone ? (
-            <div className="planner-sidebar" data-testid="planner-sidebar">
-              {errorAlert && <div className="px-3 pt-3">{errorAlert}</div>}
-              <section className="px-3 py-3" aria-labelledby="track-name">
-                <h1 id="track-name" className="h5 mb-0 text-break">
-                  {track.name}
-                </h1>
-                <p className="small text-body-secondary mb-3" data-testid="phone-summary">
-                  {t('timetable.cards.summary', {
-                    distance: format.km(track.distanceKm),
-                    climb: format.m(track.climbM),
-                    start: clock.format(0),
-                  })}
-                </p>
-                <TimetableCards timetable={timetable} times={clock} tightBufferMin={tightBufferMin} />
-              </section>
-            </div>
-          ) : (
-          <div className="planner-sidebar" data-testid="planner-sidebar">
-            {errorAlert && <div className="px-3 pt-3">{errorAlert}</div>}
-            <TrackSummary track={track} />
-            <PlanSettingsBar
-              start={start}
-              onStartChange={setStart}
-              timeZone={timeZone}
-              onTimeZoneChange={setTimeZone}
-              times={times}
-              onTimeDisplayChange={setTimeDisplay}
-              tightBufferMin={tightBufferMin}
-              onTightBufferChange={setTightBufferMin}
-              formatClock={clock.format}
-              estimator={estimator}
-              params={timeModel.params}
-              onModelChange={(id) =>
-                setTimeModel({
-                  id,
-                  params: resolveParams(
-                    estimators.get(id),
-                    id === config.planning.timeModel.id ? config.planning.timeModel.params : {},
-                  ),
-                })
-              }
-              onParamChange={(key, value) =>
-                setTimeModel((current) => ({ ...current, params: { ...current.params, [key]: value } as EstimatorParams }))
-              }
-              totals={timetable.totals}
-              tightestLabel={timetable.totals.tightest ? controlLabel(timetable.totals.tightest.control) : null}
+    <div className={`app-shell${session ? ' has-track' : ''}`}>
+      <AppHeader onHome={() => request({ kind: 'route', route: START_ROUTE })}>
+        {session && (
+          <>
+            <PlanMenu
+              name={session.plan.name}
+              currentId={session.plan.id}
+              listing={listing}
+              onOpenPlan={(id) => request({ kind: 'route', route: { plan: id, isNew: false } })}
+              onNewPlan={(file) => void importFile(file)}
+              onAllPlans={() => request({ kind: 'route', route: START_ROUTE })}
             />
-            <CheckpointPanel
-              track={track}
-              state={checkpointState}
-              rules={rules}
-              dispatch={dispatch}
-              onAdd={(km) => addCheckpoint(km, 'km')}
-              onMove={moveCheckpoint}
-              timetable={timetable}
-              estimator={estimator}
-              planParams={timeModel.params}
-              defaultRestMin={defaultRestMin}
-              activeSegment={highlighted ? highlighted.index : null}
-              onActiveSegmentChange={setActiveSegment}
-              times={times}
-              tightBufferMin={tightBufferMin}
-            />
-          </div>
-          )}
-          {/* right: map and elevation profile, fixed */}
-          <section className="planner-map" aria-label={t('map.sectionLabel')}>
-            <TrackMap
-              track={track}
-              highlight={activeIndex !== null ? track.points[activeIndex] : null}
-              checkpoints={mapCheckpoints}
-              onTrackClick={isPhone ? undefined : (lat, lon) => addCheckpoint(snapToTrack(track, lat, lon).distanceKm, 'map')}
-              positionInfo={(distanceKm, touch) => {
-                const at = timesAt(track, trackTimes!, distanceKm);
-                // climb so far – same track points (and hysteresis) as the segments and the track summary
-                const climbM = track.minEleM === null ? null : track.points[nearestPointIndex(track.points, distanceKm)].ascentM;
-                return (
-                  <PositionInfo
-                    info={{ distanceKm, climbM, ...at }}
-                    times={isPhone ? clock : times}
-                    hint={!touch && !isPhone ? t('map.addCheckpoint') : undefined}
-                  />
-                );
-              }}
-              onTrackHover={(km) => setActiveIndex(km === null ? null : nearestPointIndex(track.points, km))}
-              onCheckpointClick={(id) => document.getElementById(`cp-${id}-name`)?.focus()}
-              onCheckpointMove={isPhone ? undefined : onCheckpointDrop}
-              onCheckpointDrag={(drag) => {
-                setMapDrag(drag);
-                setActiveIndex(drag ? nearestPointIndex(track.points, drag.distanceKm) : null);
-              }}
-              highlightPath={highlightPath}
-              overlayLines={isPhone ? null : overlayResult?.lines}
+            {dirty && (
+              <Badge bg="warning" text="dark" className="unsaved-badge" data-testid="unsaved">
+                {t('plans.notSaved')}
+              </Badge>
+            )}
+            <Button
+              variant="outline-primary"
+              className="d-inline-flex align-items-center gap-2"
+              onClick={downloadPlan}
+              aria-label={t('plans.download')}
             >
-              {!isPhone && (
-                <RouteOverlayPanel
-                  overlay={overlay}
-                  onChange={setOverlayId}
-                  distanceByClass={overlayResult?.distances ?? null}
-                  noteValues={{ zone: timeZone.replaceAll('_', ' ') }}
-                />
-              )}
-            </TrackMap>
-            <div className="planner-profile border-top bg-white">
-              <ElevationProfile
-                track={track}
-                activeIndex={activeIndex}
-                onActiveIndexChange={setActiveIndex}
-                checkpoints={mapCheckpoints}
-                onPick={isPhone ? undefined : (km) => addCheckpoint(km, 'profile')}
-                onCheckpointMove={isPhone ? undefined : onCheckpointDrop}
-                dragPreview={mapDrag}
-                highlightRange={highlighted}
-                footer={
-                  <SegmentStrip
-                    segments={segmentViews}
-                    totalKm={track.distanceKm}
-                    activeIndex={highlighted ? highlighted.index : null}
-                    onActiveIndexChange={setActiveSegment}
-                  />
-                }
-              />
-            </div>
-          </section>
+              <DownloadIcon />
+              <span className="d-none d-md-inline">{t('plans.download')}</span>
+            </Button>
+          </>
+        )}
+      </AppHeader>
+      {session ? (
+        <PlannerView key={screenKey} plan={session.plan} onChange={onPlanChange} />
+      ) : loadingId ? (
+        <main className="flex-grow-1 d-flex align-items-center justify-content-center gap-2 text-body-secondary" role="status">
+          <Spinner size="sm" animation="border" aria-hidden="true" />
+          {t('plans.loading')}
         </main>
       ) : (
-        <Container as="main" fluid className="flex-grow-1 py-3 px-4 d-flex flex-column gap-3">
-          {errorAlert}
-          <GpxDropZone onFile={(file) => void importFile(file)} busy={busy} />
-        </Container>
+        <StartScreen
+          listing={listing}
+          listingError={listingError}
+          onRetry={() => void reload()}
+          onUpload={(file) => void importFile(file)}
+          uploadBusy={busy}
+          uploadError={uploadError && t(`upload.errors.${uploadError}`)}
+          onOpenPlan={(id) => request({ kind: 'route', route: { plan: id, isNew: false } })}
+          onOpenTrack={(file) => request({ kind: 'track', file })}
+          message={message}
+          onDismissMessage={() => setMessage(null)}
+        />
       )}
-      <div className="visually-hidden" role="status" aria-live="polite" data-testid="announcement">
-        {announcement}
-      </div>
+      <UnsavedChangesDialog
+        show={pending !== null}
+        name={session?.plan.name ?? ''}
+        onCancel={() => setPending(null)}
+        onDiscard={() => {
+          const target = pending!;
+          setPending(null);
+          void go(target);
+        }}
+        onDownload={() => {
+          const target = pending!;
+          setPending(null);
+          downloadPlan();
+          void go(target);
+        }}
+      />
+      <DownloadDialog
+        show={downloaded !== null}
+        planFile={downloaded?.planFile ?? ''}
+        trackFile={downloaded?.trackFile ?? ''}
+        trackMissing={downloaded?.trackMissing ?? false}
+        onDownloadTrack={() => session && downloadFile(session.plan.trackFile, session.gpx, 'application/gpx+xml')}
+        onClose={() => setDownloaded(null)}
+      />
     </div>
   );
 }

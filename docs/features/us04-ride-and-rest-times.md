@@ -31,5 +31,5 @@ So that I can calculate estimated riding time per segment
 - Departure = `max(arrival + rest, opening)`; buffer = closing time − arrival.
 - The OK/Tight/Early/Late status and clock times were added with [US6](us06-start-time.md); with *Since start*
   the timetable shows the times after the start as described here.
-- Time model and parameters are held in memory until plans are persisted ([US5](us05-multiple-route-plans.md)).
+- Time model and parameters are saved in the plan file ([US5](us05-multiple-route-plans.md)).
 - Which columns are shown depends on the width of the plan column, see [plan.md](../plan.md#ui-design).
