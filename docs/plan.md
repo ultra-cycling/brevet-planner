@@ -14,21 +14,21 @@ An iteration is done when the acceptance criteria of its user stories are verifi
 Library) and browser tests (Playwright), the feature file links these tests, and the CI workflow is green. Criteria of
 stories that aren't built yet are marked *proposed* and are refined at the start of their iteration.
 
-| #  | Status    | Scope                                                                                                                                                                                                   |
-|----|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 0  | ✅         | Scaffold (Vite, React, TypeScript, Bootstrap theme), [`config.yaml`](#configuration--configyaml) loading, i18n (en), storage and time-model interfaces, test setup, GitHub workflows (CI, Pages deploy) |
-| 1  | ✅         | [US1 – Show a track on a map](features/us01-show-track-on-map.md): upload GPX, CyclOSM map, elevation profile linked to the map                                                                         |
-| 2  | ✅         | [US2 – Mark checkpoints](features/us02-mark-checkpoints.md): add on map / profile / by km / from GPX waypoints; ACP control windows, editable                                                           |
-| 3  | ✅         | [US3 – Segments](features/us03-segments.md): distance, climb and descent between checkpoints; segment strip and highlighting                                                                            |
-| 4  | ✅         | [US4 – Ride and rest times](features/us04-ride-and-rest-times.md): speed + climb-rate model, per-segment overrides, rest times, timetable and totals                                                    |
-| –  | ✅         | [Planner layout](#layout): plan column scrolling next to a fixed map (cross-cutting, after iteration 4)                                                                                                 |
-| 5  | ✅         | [US6 – Start time](features/us06-start-time.md): start date/time, clock times, live recalculation, OK/Tight/Early/Late status                                                                           |
-| 6  | ✅         | [US7 – Route overlays](features/us07-route-overlays.md): overlay mechanism, road gradient, daylight (with time zone of the start)                                                                       |
-| 7  | ✅         | [Phone layout](#phone-layout) – read-only timetable cards, small map (cross-functional requirement in [design.md](design.md#cross-functional-requirements))                                             |
-| 8  | ✅         | [US9 – Move checkpoints](features/us09-move-checkpoints.md): drag and drop on map and profile                                                                                                           |
-| 9  | ✅         | [US8 – Trackpoint tooltip](features/us08-trackpoint-tooltip.md): distance and expected times when hovering the route                                                                                    |
-| 10 | ✅         | [US5 – Manage multiple route plans](features/us05-multiple-route-plans.md): plan files in `public/plans/`, start screen, plan menu, download, URL per plan |
-| 11 | ✅         | [US16 – Custom brevet](features/us16-custom-brevet.md): custom distance and time limit, closing times scaled to the limit |
+| #  | Status | Scope                                                                                                                                                                                                   |
+|----|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0  | ✅      | Scaffold (Vite, React, TypeScript, Bootstrap theme), [`config.yaml`](#configuration--configyaml) loading, i18n (en), storage and time-model interfaces, test setup, GitHub workflows (CI, Pages deploy) |
+| 1  | ✅      | [US1 – Show a track on a map](features/us01-show-track-on-map.md): upload GPX, CyclOSM map, elevation profile linked to the map                                                                         |
+| 2  | ✅      | [US2 – Mark checkpoints](features/us02-mark-checkpoints.md): add on map / profile / by km / from GPX waypoints; ACP control windows, editable                                                           |
+| 3  | ✅      | [US3 – Segments](features/us03-segments.md): distance, climb and descent between checkpoints; segment strip and highlighting                                                                            |
+| 4  | ✅      | [US4 – Ride and rest times](features/us04-ride-and-rest-times.md): speed + climb-rate model, per-segment overrides, rest times, timetable and totals                                                    |
+| –  | ✅      | [Planner layout](#layout): plan column scrolling next to a fixed map (cross-cutting, after iteration 4)                                                                                                 |
+| 5  | ✅      | [US6 – Start time](features/us06-start-time.md): start date/time, clock times, live recalculation, OK/Tight/Early/Late status                                                                           |
+| 6  | ✅      | [US7 – Route overlays](features/us07-route-overlays.md): overlay mechanism, road gradient, daylight (with time zone of the start)                                                                       |
+| 7  | ✅      | [Phone layout](#phone-layout) – read-only timetable cards, small map (cross-functional requirement in [design.md](design.md#cross-functional-requirements))                                             |
+| 8  | ✅      | [US9 – Move checkpoints](features/us09-move-checkpoints.md): drag and drop on map and profile                                                                                                           |
+| 9  | ✅      | [US8 – Trackpoint tooltip](features/us08-trackpoint-tooltip.md): distance and expected times when hovering the route                                                                                    |
+| 10 | ✅      | [US5 – Manage multiple route plans](features/us05-multiple-route-plans.md): plan files in `public/plans/`, start screen, plan menu, download, URL per plan                                              |
+| 11 | ✅      | [US16 – Custom brevet](features/us16-custom-brevet.md): custom distance and time limit, closing times scaled to the limit                                                                               |
 
 US5 stores plans as files in the repository for now; a database/backend storage is a later story (the storage
 interface is prepared for it).
@@ -38,14 +38,14 @@ interface is prepared for it).
 Stories captured but not yet scheduled; their acceptance criteria are proposals to be refined with the product owner
 (open questions are listed in each feature file).
 
-| Story | Scope | Kind |
-|-------|-------|------|
-| [US13 – Fix the phone layout on iPhone](features/us13-phone-layout-fixes.md) | elevation profile overlaps other content on iPhone; test the phone layout in WebKit | bug, details open |
-| [US15 – Compact plan summary](features/us15-compact-plan-summary.md) | one-line overview at the top of the plan column, settings behind an *Edit* button | improvement, details open |
-| [US14 – Clean timetable with edit mode](features/us14-clean-timetable.md) | read-only timetable by default, details of a checkpoint behind an *Edit* button | improvement, details open |
-| [US12 – Realistic climb from terrain data](features/us12-elevation-from-terrain-data.md) | elevations from a digital elevation model, climb comparable to other planners | feature |
-| [US11 – Overlapping track sections](features/us11-overlapping-track-sections.md) | parallel lines and direction arrows where the track runs along itself; unambiguous clicking | feature |
-| [US10 – PDF export of the legs](features/us10-pdf-export.md) | PDF with overview and one section per leg: profile, distances, times | feature |
+| Story                                                                                    | Scope                                                                                       | Kind                      |
+|------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------|
+| [US13 – Fix the phone layout on iPhone](features/us13-phone-layout-fixes.md)             | elevation profile overlaps other content on iPhone; test the phone layout in WebKit         | bug, details open         |
+| [US15 – Compact plan summary](features/us15-compact-plan-summary.md)                     | one-line overview at the top of the plan column, settings behind an *Edit* button           | improvement, details open |
+| [US14 – Clean timetable with edit mode](features/us14-clean-timetable.md)                | read-only timetable by default, details of a checkpoint behind an *Edit* button             | improvement, details open |
+| [US12 – Realistic climb from terrain data](features/us12-elevation-from-terrain-data.md) | elevations from a digital elevation model, climb comparable to other planners               | feature                   |
+| [US11 – Overlapping track sections](features/us11-overlapping-track-sections.md)         | parallel lines and direction arrows where the track runs along itself; unambiguous clicking | feature                   |
+| [US10 – PDF export of the legs](features/us10-pdf-export.md)                             | PDF with overview and one section per leg: profile, distances, times                        | feature                   |
 
 Suggested order (top to bottom): the iPhone bug first; US15 and US14 change the plan column, which the PDF export
 and later features build on; US12 corrects the numbers everything else is calculated from.
@@ -78,10 +78,10 @@ the profile fits the map pane, no page scrolling.
 
 ### Responsive behaviour
 
-| Device              | Behaviour                                                                             |
-|---------------------|---------------------------------------------------------------------------------------|
-| Desktop (≥ 1200 px) | Plan column (50 % of the width, 640–1040 px) left, map pane right                     |
-| Tablet (≥ 768 px)   | Map pane on top (half the height, fixed), plan column below                           |
+| Device              | Behaviour                                                                           |
+|---------------------|-------------------------------------------------------------------------------------|
+| Desktop (≥ 1200 px) | Plan column (50 % of the width, 640–1040 px) left, map pane right                   |
+| Tablet (≥ 768 px)   | Map pane on top (half the height, fixed), plan column below                         |
 | Phone (< 768 px)    | Read-only: map, elevation profile and timetable cards; the page scrolls (see below) |
 
 The timetable adapts to the width of the plan column (CSS container queries), not to the viewport. The *Segment*
@@ -106,8 +106,10 @@ only:
    buffer, control window, rest, departure, segment (distance, climb/descent, riding time).
 
 Plan settings, the editable table, the route overlays and all editing are left out; tapping the map or the profile
-doesn't add checkpoints. Plans are opened from the start screen or the plan menu ([US5](features/us05-multiple-route-plans.md)),
-which on phones spans the screen below the header; *Download plan* is shown as icon. A plan prepared on a wider screen keeps its state when the window
+doesn't add checkpoints. Plans are opened from the start screen or the plan
+menu ([US5](features/us05-multiple-route-plans.md)),
+which on phones spans the screen below the header; *Download plan* is shown as icon. A plan prepared on a wider screen
+keeps its state when the window
 gets narrow (and is editable again when it gets wide); the map re-fits the track whenever its size changes.
 
 Verified by [phone.spec.ts](../e2e/phone.spec.ts) (390 × 844, touch): *shows only the map, the elevation profile and
@@ -210,7 +212,8 @@ one hour.
 
 ### Storage
 
-Plans are files in the repository for now ([US5](features/us05-multiple-route-plans.md)): `public/plans/<name>.plan.json`
+Plans are files in the repository for now ([US5](features/us05-multiple-route-plans.md)):
+`public/plans/<name>.plan.json`
 next to its GPX. `PlanRepository` (async: `capabilities`, `list`, `load`, `loadTrack`, `save`) hides where they come
 from:
 
