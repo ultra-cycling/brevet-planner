@@ -40,15 +40,16 @@ Stories captured but not yet scheduled; their acceptance criteria are proposals 
 
 | Story                                                                                    | Scope                                                                                       | Kind                      |
 |------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------|
-| [US13 – Fix the phone layout on iPhone](features/us13-phone-layout-fixes.md)             | elevation profile overlaps other content on iPhone; test the phone layout in WebKit         | bug, details open         |
 | [US15 – Compact plan summary](features/us15-compact-plan-summary.md)                     | one-line overview at the top of the plan column, settings behind an *Edit* button           | improvement, details open |
 | [US14 – Clean timetable with edit mode](features/us14-clean-timetable.md)                | read-only timetable by default, details of a checkpoint behind an *Edit* button             | improvement, details open |
 | [US12 – Realistic climb from terrain data](features/us12-elevation-from-terrain-data.md) | elevations from a digital elevation model, climb comparable to other planners               | feature                   |
 | [US11 – Overlapping track sections](features/us11-overlapping-track-sections.md)         | parallel lines and direction arrows where the track runs along itself; unambiguous clicking | feature                   |
 | [US10 – PDF export of the legs](features/us10-pdf-export.md)                             | PDF with overview and one section per leg: profile, distances, times                        | feature                   |
+| [US13 – Fix the phone layout on iPhone](features/us13-phone-layout-fixes.md)             | elevation profile overlaps other content on iPhone; test the phone layout in WebKit         | bug, details open         |
 
-Suggested order (top to bottom): the iPhone bug first; US15 and US14 change the plan column, which the PDF export
-and later features build on; US12 corrects the numbers everything else is calculated from.
+Suggested order (top to bottom): US15 and US14 change the plan column, which the PDF export and later features build
+on; US12 corrects the numbers everything else is calculated from; the iPhone fixes (US13) come last, once the plan
+column has its new design.
 
 ## UI design
 

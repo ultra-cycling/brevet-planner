@@ -22,24 +22,25 @@ deployment and operation of the app.
 Each user story is described in its own file in [features/](features), with acceptance criteria and the tests that
 verify them. Iterations and architecture: [plan.md](plan.md).
 
-| #    | User story                                                                                       | As a long-distance cyclist I want to …                        | Status    |
-|------|--------------------------------------------------------------------------------------------------|---------------------------------------------------------------|-----------|
-| US1  | [Show a track on a map](features/us01-show-track-on-map.md)                                      | upload a track and see it on a map                            | ✅ Done    |
-| US2  | [Mark checkpoints along the track](features/us02-mark-checkpoints.md)                            | select POIs along the route to identify the checkpoints       | ✅ Done    |
-| US3  | [Create segments from checkpoints](features/us03-segments.md)                                    | divide the route into segments between the checkpoints        | ✅ Done    |
-| US4  | [Provide estimated ride times and rest times for segments](features/us04-ride-and-rest-times.md) | provide speed and climb per segment to calculate riding times | ✅ Done    |
-| US6  | [Provide start time for each event](features/us06-start-time.md)                                 | calculate the timetable from a start time                     | ✅ Done    |
-| US7  | [Overlay for route in map](features/us07-route-overlays.md)                                      | colour the route by e.g. road gradient or daylight            | ✅ Done    |
-| US8  | [Show trackpoint tooltip](features/us08-trackpoint-tooltip.md)                                   | see distance and expected times when hovering the route       | ✅ Done    |
-| US9  | [Move existing checkpoints](features/us09-move-checkpoints.md)                                   | drag checkpoints along the track on the map and the profile   | ✅ Done    |
-| US5  | [Manage multiple route plans](features/us05-multiple-route-plans.md)                             | keep several plans and choose one on a start screen           | ✅ Done    |
-| US10 | [PDF export of the legs](features/us10-pdf-export.md)                                            | export the legs with profile and times as PDF                 | Backlog   |
-| US11 | [Overlapping track sections](features/us11-overlapping-track-sections.md)                        | see passages ridden twice as parallel lines with arrows       | Backlog   |
-| US12 | [Realistic climb from terrain data](features/us12-elevation-from-terrain-data.md)                | get the climb from terrain data, not only from the GPX        | Backlog   |
-| US13 | [Fix the phone layout on iPhone](features/us13-phone-layout-fixes.md)                            | read map, profile and timetable on my iPhone                  | Backlog   |
-| US14 | [Clean timetable with edit mode](features/us14-clean-timetable.md)                               | see a clean timetable and edit details on request             | Backlog   |
-| US15 | [Compact plan summary](features/us15-compact-plan-summary.md)                                    | see a one-line plan overview with an edit button              | Backlog   |
-| US16 | [Custom brevet distance and time limit](features/us16-custom-brevet.md)                          | set a custom distance and time limit for non-standard events  | ✅ Done    |
+| #    | User story                                                                                       | As a long-distance cyclist I want to …                        | Status  |
+|------|--------------------------------------------------------------------------------------------------|---------------------------------------------------------------|---------|
+| US1  | [Show a track on a map](features/us01-show-track-on-map.md)                                      | upload a track and see it on a map                            | ✅ Done  |
+| US2  | [Mark checkpoints along the track](features/us02-mark-checkpoints.md)                            | select POIs along the route to identify the checkpoints       | ✅ Done  |
+| US3  | [Create segments from checkpoints](features/us03-segments.md)                                    | divide the route into segments between the checkpoints        | ✅ Done  |
+| US4  | [Provide estimated ride times and rest times for segments](features/us04-ride-and-rest-times.md) | provide speed and climb per segment to calculate riding times | ✅ Done  |
+| US6  | [Provide start time for each event](features/us06-start-time.md)                                 | calculate the timetable from a start time                     | ✅ Done  |
+| US7  | [Overlay for route in map](features/us07-route-overlays.md)                                      | colour the route by e.g. road gradient or daylight            | ✅ Done  |
+| US8  | [Show trackpoint tooltip](features/us08-trackpoint-tooltip.md)                                   | see distance and expected times when hovering the route       | ✅ Done  |
+| US9  | [Move existing checkpoints](features/us09-move-checkpoints.md)                                   | drag checkpoints along the track on the map and the profile   | ✅ Done  |
+| US5  | [Manage multiple route plans](features/us05-multiple-route-plans.md)                             | keep several plans and choose one on a start screen           | ✅ Done  |
+| US10 | [PDF export of the legs](features/us10-pdf-export.md)                                            | export the legs with profile and times as PDF                 | Backlog |
+| US11 | [Overlapping track sections](features/us11-overlapping-track-sections.md)                        | see passages ridden twice as parallel lines with arrows       | Backlog |
+| US12 | [Realistic climb from terrain data](features/us12-elevation-from-terrain-data.md)                | get the climb from terrain data, not only from the GPX        | Backlog |
+| US13 | [Fix the phone layout on iPhone](features/us13-phone-layout-fixes.md)                            | read map, profile and timetable on my iPhone                  | Backlog |
+| US14 | [Clean timetable with edit mode](features/us14-clean-timetable.md)                               | see a clean timetable and edit details on request             | Backlog |
+| US15 | [Compact plan summary](features/us15-compact-plan-summary.md)                                    | see a one-line plan overview with an edit button              | Backlog |
+| US16 | [Custom brevet distance and time limit](features/us16-custom-brevet.md)                          | set a custom distance and time limit for non-standard events  | ✅ Done  |
+| US17 | [Waypoints import](features/us17-import-waypoints.md)                                            | import waypoints from GPS track                               | Backlog |
 
 ## Cross-functional Requirements
 
