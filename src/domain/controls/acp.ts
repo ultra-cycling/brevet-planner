@@ -10,6 +10,10 @@ import type { ControlKind, ControlRules, ControlWindow } from './ControlRules';
  * - Finish: closes at the fixed time limit of the nominal brevet distance. Controls beyond the nominal distance
  *   (brevets are often a few km longer) are computed at the nominal distance.
  * - Times are rounded to the nearest minute.
+ *
+ * Custom brevets (US16, distance and time limit set by the organiser): openings as above; the finish closes at the
+ * custom limit and all other closing times are scaled by custom limit ÷ the closing time of the formula at the custom
+ * distance – so a tighter or more generous limit applies along the whole route. The start window stays one hour.
  */
 const BANDS: readonly { untilKm: number; minKmh: number; maxKmh: number }[] = [
   { untilKm: 200, minKmh: 15, maxKmh: 34 },
@@ -49,6 +53,11 @@ function hoursAt(distanceKm: number, speed: 'minKmh' | 'maxKmh'): number {
 
 const toMinutes = (hours: number) => Math.round(hours * 60);
 
+/** Closing time by the formula (incl. the rule for the first 60 km), unrounded, in hours */
+function closingHours(km: number): number {
+  return km <= EARLY_CONTROL_KM ? km / EARLY_CONTROL_KMH + 1 : hoursAt(km, 'minKmh');
+}
+
 export const acpControlRules: ControlRules = {
   id: 'acp',
   brevetDistancesKm: Object.keys(TIME_LIMITS_MIN).map(Number),
@@ -62,17 +71,22 @@ export const acpControlRules: ControlRules = {
     return fitting.length > 0 ? Math.max(...fitting) : null;
   },
 
-  window(distanceKm: number, kind: ControlKind, brevetKm: number | null): ControlWindow {
+  defaultTimeLimitMin(distanceKm) {
+    return toMinutes(closingHours(distanceKm));
+  },
+
+  window(distanceKm: number, kind: ControlKind, brevetKm: number | null, customLimitMin: number | null = null): ControlWindow {
     if (kind === 'start' || distanceKm <= 0) return { openMin: 0, closeMin: 60 };
 
     const km = brevetKm !== null ? Math.min(distanceKm, brevetKm) : distanceKm;
     const openMin = toMinutes(hoursAt(km, 'maxKmh'));
-    const limit = brevetKm !== null ? this.timeLimitMin(brevetKm) : null;
+    const custom = brevetKm !== null && customLimitMin !== null;
+    const limit = brevetKm === null ? null : custom ? customLimitMin : this.timeLimitMin(brevetKm);
 
     if (kind === 'finish' && limit !== null) return { openMin, closeMin: limit };
 
-    let closeMin =
-      km <= EARLY_CONTROL_KM ? toMinutes(km / EARLY_CONTROL_KMH + 1) : toMinutes(hoursAt(km, 'minKmh'));
+    const scale = custom ? customLimitMin / (closingHours(brevetKm) * 60) : 1;
+    let closeMin = toMinutes(closingHours(km) * scale);
     if (limit !== null) closeMin = Math.min(closeMin, limit);
     return { openMin, closeMin };
   },

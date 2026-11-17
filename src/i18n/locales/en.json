@@ -122,7 +122,14 @@
     },
     "brevetDistance": "Brevet distance ({{rules}})",
     "brevetOption": "{{km}} km – limit {{limit}}",
-    "noBrevet": "No fixed time limit"
+    "noBrevet": "No fixed time limit",
+    "custom": "Custom distance…",
+    "customDistance": "Distance (km)",
+    "customLimit": "Time limit (h:mm)",
+    "invalidDistance": "Enter a distance between 0 and {{max}} km",
+    "invalidLimit": "Enter the time limit as hours:minutes, e.g. 15:00",
+    "customNote": "Custom brevet of {{km}} km: the finish closes after {{limit}}, the closing times of the other controls are scaled to that limit.",
+    "customBrevet": "{{km}} km brevet, limit {{limit}}"
   },
   "segments": {
     "label": "Segments",

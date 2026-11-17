@@ -28,6 +28,7 @@ stories that aren't built yet are marked *proposed* and are refined at the start
 | 8  | ✅         | [US9 – Move checkpoints](features/us09-move-checkpoints.md): drag and drop on map and profile                                                                                                           |
 | 9  | ✅         | [US8 – Trackpoint tooltip](features/us08-trackpoint-tooltip.md): distance and expected times when hovering the route                                                                                    |
 | 10 | ✅         | [US5 – Manage multiple route plans](features/us05-multiple-route-plans.md): plan files in `public/plans/`, start screen, plan menu, download, URL per plan |
+| 11 | ✅         | [US16 – Custom brevet](features/us16-custom-brevet.md): custom distance and time limit, closing times scaled to the limit |
 
 US5 stores plans as files in the repository for now; a database/backend storage is a later story (the storage
 interface is prepared for it).
@@ -201,6 +202,11 @@ ACP rules as implemented (`acp.ts`): opening at the maximum and closing at the m
 controls within the first 60 km close at 20 km/h + 1 h; the finish closes at the fixed limit of the nominal distance
 (200: 13:30, 300: 20:00, 400: 27:00, 600: 40:00, 1000: 75:00, 1200: 90:00); distances beyond the nominal distance
 count as the nominal distance; times are rounded to the minute.
+
+Custom brevets ([US16](features/us16-custom-brevet.md)): distance and time limit set by the rider; openings as above,
+the finish closes at the custom limit, all other closing times are scaled by custom limit ÷ formula limit of the
+custom distance (`defaultTimeLimitMin`, also the proposal when choosing *Custom distance…*); the start window stays
+one hour.
 
 ### Storage
 

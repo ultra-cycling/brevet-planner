@@ -1,5 +1,5 @@
-import { haversineKm } from './geo';
-import { nearestPointIndex, type Track } from './track';
+import { haversineKm } from './geo.ts';
+import { nearestPointIndex, type Track } from './track.ts';
 
 /** A position on the track, interpolated between two track points. */
 export interface TrackPosition {

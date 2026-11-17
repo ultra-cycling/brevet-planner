@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { importWaypoints, type CheckpointAction, type CheckpointState } from '../../domain/checkpoints';
 import type { ControlRules } from '../../domain/controls/ControlRules';
 import { arrivalStatus } from '../../domain/status';
-import { formatElapsed } from '../../domain/time/duration';
+import { formatElapsed, parseElapsed } from '../../domain/time/duration';
 import type { EstimatorParamDef, EstimatorParams, TimeEstimator } from '../../domain/time/TimeEstimator';
 import type { Timetable, TimetableRow } from '../../domain/timetable';
 import type { Track } from '../../domain/track/track';
@@ -39,6 +39,10 @@ export interface CheckpointPanelProps {
   tightBufferMin: number;
 }
 
+/** Value of the "custom distance" option of the brevet select */
+const CUSTOM = 'custom';
+const MAX_BREVET_KM = 5000;
+
 const parseNumber = (text: string) => {
   const value = Number(text.trim().replace(',', '.'));
   return text.trim() !== '' && Number.isFinite(value) ? value : null;
@@ -67,6 +71,8 @@ export function CheckpointPanel({
   const [newKm, setNewKm] = useState('');
   const [newKmError, setNewKmError] = useState<string | null>(null);
   const rulesName = t(`controls.rules.${rules.id}`);
+  // custom brevet (US16): the organiser's distance and time limit
+  const custom = state.customLimitMin !== null && state.brevetKm !== null;
 
   const kmError = (km: number | null) =>
     km === null || km <= 0 || km >= track.distanceKm ? t('checkpoints.kmOutOfRange', { max: format.km(track.distanceKm) }) : null;
@@ -195,19 +201,60 @@ export function CheckpointPanel({
             <Form.Label className="small mb-1">{t('controls.brevetDistance', { rules: rulesName })}</Form.Label>
             <Form.Select
               size="sm"
-              value={state.brevetKm ?? ''}
-              onChange={(e) =>
-                dispatch({ type: 'setBrevetKm', brevetKm: e.target.value === '' ? null : Number(e.target.value) })
-              }
+              value={custom ? CUSTOM : (state.brevetKm ?? '')}
+              onChange={(e) => {
+                if (e.target.value === CUSTOM) {
+                  // proposal: the track's distance and the limit of the rules' formula for it (US16)
+                  const km = Math.max(1, Math.round(track.distanceKm));
+                  dispatch({ type: 'setCustomBrevet', brevetKm: km, limitMin: rules.defaultTimeLimitMin(km) });
+                } else {
+                  dispatch({ type: 'setBrevetKm', brevetKm: e.target.value === '' ? null : Number(e.target.value) });
+                }
+              }}
             >
               {rules.brevetDistancesKm.map((km) => (
                 <option key={km} value={km}>
                   {t('controls.brevetOption', { km, limit: formatElapsed(rules.timeLimitMin(km)!) })}
                 </option>
               ))}
+              <option value={CUSTOM}>{t('controls.custom')}</option>
               <option value="">{t('controls.noBrevet')}</option>
             </Form.Select>
           </Form.Group>
+          {custom && (
+            <>
+              <Form.Group controlId="custom-brevet-km" className="custom-brevet-field">
+                <Form.Label className="small mb-1">{t('controls.customDistance')}</Form.Label>
+                <CommitInput
+                  size="sm"
+                  inputMode="decimal"
+                  className="text-end tabular-nums"
+                  value={String(state.brevetKm)}
+                  onCommit={(text) => {
+                    const km = parseNumber(text);
+                    if (km === null || km <= 0 || km > MAX_BREVET_KM) return t('controls.invalidDistance', { max: MAX_BREVET_KM });
+                    dispatch({ type: 'setCustomBrevet', brevetKm: km, limitMin: state.customLimitMin! });
+                    return null;
+                  }}
+                />
+              </Form.Group>
+              <Form.Group controlId="custom-brevet-limit" className="custom-brevet-field">
+                <Form.Label className="small mb-1">{t('controls.customLimit')}</Form.Label>
+                <CommitInput
+                  size="sm"
+                  inputMode="numeric"
+                  className="text-end tabular-nums"
+                  value={formatElapsed(state.customLimitMin!)}
+                  onCommit={(text) => {
+                    const minutes = parseElapsed(text);
+                    if (minutes === null || minutes <= 0) return t('controls.invalidLimit');
+                    dispatch({ type: 'setCustomBrevet', brevetKm: state.brevetKm!, limitMin: minutes });
+                    return null;
+                  }}
+                />
+              </Form.Group>
+            </>
+          )}
           {track.waypoints.length > 0 && (
             <Button variant="outline-primary" size="sm" onClick={onImport}>
               {t('checkpoints.import.button', { count: track.waypoints.length })}
@@ -421,7 +468,9 @@ export function CheckpointPanel({
           </Table>
         </div>
         <p id="timetable-note" className="small text-body-secondary mb-0">
-          {t(`checkpoints.windowsNote.${times.mode}`, { rules: rulesName })} {t('timetable.note', { tight: tightBufferMin })}
+          {t(`checkpoints.windowsNote.${times.mode}`, { rules: rulesName })}
+          {custom && ` ${t('controls.customNote', { limit: formatElapsed(state.customLimitMin!), km: state.brevetKm })}`}{' '}
+          {t('timetable.note', { tight: tightBufferMin })}
         </p>
 
         <Form className="d-flex flex-wrap align-items-start gap-2" onSubmit={onAddAtKm} noValidate>

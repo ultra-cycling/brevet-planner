@@ -18,9 +18,13 @@ export interface ControlRules {
   timeLimitMin(brevetKm: number): number | null;
   /** Nominal brevet distance that matches a track length, `null` if none fits */
   inferBrevetKm(trackKm: number): number | null;
+  /** Time limit the rules give for any distance – proposal for a custom brevet (US16) */
+  defaultTimeLimitMin(distanceKm: number): number;
   /**
    * Control window for a control at `distanceKm`.
    * @param brevetKm nominal distance; `null` = no fixed time limit, the finish is computed like any control
+   * @param customLimitMin time limit of a custom brevet (US16): the finish closes then, the closing times of the other
+   *   controls are scaled accordingly; `null` = the rules' limit of `brevetKm`
    */
-  window(distanceKm: number, kind: ControlKind, brevetKm: number | null): ControlWindow;
+  window(distanceKm: number, kind: ControlKind, brevetKm: number | null, customLimitMin?: number | null): ControlWindow;
 }

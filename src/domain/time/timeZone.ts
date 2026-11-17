@@ -1,4 +1,4 @@
-import { clockAt, type RideStart } from './clock';
+import { clockAt, type RideStart } from './clock.ts';
 
 /** The browser's time zone, e.g. "Europe/Berlin" */
 export function browserTimeZone(): string {

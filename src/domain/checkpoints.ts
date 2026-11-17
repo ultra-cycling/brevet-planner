@@ -1,7 +1,7 @@
-import type { ControlKind, ControlRules, ControlWindow } from './controls/ControlRules';
-import type { EstimatorParams } from './time/TimeEstimator';
-import { snapToTrack, type TrackPosition } from './track/snap';
-import type { Track } from './track/track';
+import type { ControlKind, ControlRules, ControlWindow } from './controls/ControlRules.ts';
+import type { EstimatorParams } from './time/TimeEstimator.ts';
+import { snapToTrack, type TrackPosition } from './track/snap.ts';
+import type { Track } from './track/track.ts';
 
 /** How a checkpoint was placed */
 export type CheckpointSource = 'track' | 'map' | 'profile' | 'km' | 'waypoint';
@@ -33,6 +33,11 @@ export interface CheckpointState {
   checkpoints: Checkpoint[];
   /** Nominal brevet distance for the control rules; `null` = no fixed time limit */
   brevetKm: number | null;
+  /**
+   * Time limit of a custom brevet in minutes (US16) – the organiser's distance (`brevetKm`) and limit instead of a
+   * standard distance of the control rules; `null` = standard brevet (or no fixed limit)
+   */
+  customLimitMin: number | null;
 }
 
 export type CheckpointAction =
@@ -49,7 +54,8 @@ export type CheckpointAction =
   | { type: 'setRest'; id: string; restMin: number }
   | { type: 'setSegmentParam'; id: string; key: string; value: number | null }
   | { type: 'remove'; id: string }
-  | { type: 'setBrevetKm'; brevetKm: number | null };
+  | { type: 'setBrevetKm'; brevetKm: number | null }
+  | { type: 'setCustomBrevet'; brevetKm: number; limitMin: number };
 
 const KIND_ORDER: Record<ControlKind, number> = { start: 0, control: 1, finish: 2 };
 
@@ -71,7 +77,11 @@ function control(id: string, position: TrackPosition, name: string, source: Chec
   };
 }
 
-export function initialCheckpointState(track: Track, brevetKm: number | null): CheckpointState {
+export function initialCheckpointState(
+  track: Track,
+  brevetKm: number | null,
+  customLimitMin: number | null = null,
+): CheckpointState {
   const start = track.points[0];
   const finish = track.points.at(-1)!;
   const endpoint = (kind: 'start' | 'finish', p: typeof start): Checkpoint => ({
@@ -87,10 +97,10 @@ export function initialCheckpointState(track: Track, brevetKm: number | null): C
     restMin: 0,
     segmentParams: {},
   });
-  return { checkpoints: [endpoint('start', start), endpoint('finish', finish)], brevetKm };
+  return { checkpoints: [endpoint('start', start), endpoint('finish', finish)], brevetKm, customLimitMin };
 }
 
-export const emptyCheckpointState: CheckpointState = { checkpoints: [], brevetKm: null };
+export const emptyCheckpointState: CheckpointState = { checkpoints: [], brevetKm: null, customLimitMin: null };
 
 export function checkpointReducer(state: CheckpointState, action: CheckpointAction): CheckpointState {
   const update = (id: string, fn: (cp: Checkpoint) => Checkpoint) => ({
@@ -144,7 +154,9 @@ export function checkpointReducer(state: CheckpointState, action: CheckpointActi
         checkpoints: state.checkpoints.filter((cp) => cp.id !== action.id || cp.kind !== 'control'),
       };
     case 'setBrevetKm':
-      return { ...state, brevetKm: action.brevetKm };
+      return { ...state, brevetKm: action.brevetKm, customLimitMin: null };
+    case 'setCustomBrevet':
+      return { ...state, brevetKm: action.brevetKm, customLimitMin: action.limitMin };
   }
 }
 
@@ -164,7 +176,7 @@ export interface ControlRow {
 export function controlRows(state: CheckpointState, rules: ControlRules): ControlRow[] {
   let number = 0;
   return state.checkpoints.map((checkpoint) => {
-    const ruleWindow = rules.window(checkpoint.distanceKm, checkpoint.kind, state.brevetKm);
+    const ruleWindow = rules.window(checkpoint.distanceKm, checkpoint.kind, state.brevetKm, state.customLimitMin);
     const window = {
       openMin: checkpoint.openOverrideMin ?? ruleWindow.openMin,
       closeMin: checkpoint.closeOverrideMin ?? ruleWindow.closeMin,

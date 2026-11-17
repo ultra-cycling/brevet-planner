@@ -1,4 +1,4 @@
-import { cumulativeAscentDescent, haversineKm } from './geo';
+import { cumulativeAscentDescent, haversineKm } from './geo.ts';
 
 export interface TrackPoint {
   lat: number;

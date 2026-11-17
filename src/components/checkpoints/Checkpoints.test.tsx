@@ -716,3 +716,61 @@ describe('Trackpoint tooltip (US8)', () => {
     expect(text('track-popup', 'position-expected')).toBe('Expected 09:54 (3:54 after the start)');
   });
 });
+
+describe('Custom brevet (US16)', () => {
+  const brevet = () => screen.getByRole('combobox', { name: 'Brevet distance (ACP)' });
+
+  it('proposes the track distance and the formula limit, and closes the finish at the custom limit', async () => {
+    await renderWithTrack();
+    await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '120{Enter}');
+    await userEvent.selectOptions(brevet(), 'Custom distance…');
+
+    expect(screen.getByLabelText('Distance (km)')).toHaveValue('210');
+    expect(screen.getByLabelText('Time limit (h:mm)')).toHaveValue('14:00'); // 210 km at 15 km/h
+    expect(table().at(-1)).toEqual(['Finish', '', '210.0', '6:12', '14:00']);
+    expect(table()[1]).toEqual(['CP1', '', '120.0', '3:32', '8:00']); // limit = formula: unscaled
+    expect(screen.getByText(/Custom brevet of 210 km: the finish closes after 14:00/)).toBeInTheDocument();
+  });
+
+  it('scales the closing times of the controls to a changed limit', async () => {
+    await renderWithTrack();
+    await userEvent.type(screen.getByLabelText('Add checkpoint at km'), '120{Enter}');
+    await userEvent.selectOptions(brevet(), 'Custom distance…');
+    const limit = screen.getByLabelText('Time limit (h:mm)');
+    await userEvent.clear(limit);
+    await userEvent.type(limit, '12:00{Enter}');
+
+    expect(table().at(-1)![4]).toBe('12:00');
+    expect(table()[1][4]).toBe('6:51'); // 8:00 × 12/14
+    expect(table()[1][3]).toBe('3:32'); // openings stay
+
+    const distance = screen.getByLabelText('Distance (km)');
+    await userEvent.clear(distance);
+    await userEvent.type(distance, '250{Enter}');
+    expect(table().at(-1)![4]).toBe('12:00'); // the limit stays
+    expect(table()[1][4]).toBe('5:46'); // 8:00 × 12/16:40
+  });
+
+  it('rejects invalid distances and limits', async () => {
+    await renderWithTrack();
+    await userEvent.selectOptions(brevet(), 'Custom distance…');
+    const distance = screen.getByLabelText('Distance (km)');
+    await userEvent.clear(distance);
+    await userEvent.type(distance, '0{Enter}');
+    expect(distance).toHaveAccessibleDescription('Enter a distance between 0 and 5000 km');
+
+    const limit = screen.getByLabelText('Time limit (h:mm)');
+    await userEvent.clear(limit);
+    await userEvent.type(limit, 'soon{Enter}');
+    expect(limit).toHaveAccessibleDescription('Enter the time limit as hours:minutes, e.g. 15:00');
+    expect(table().at(-1)![4]).toBe('14:00');
+  });
+
+  it('goes back to a standard distance', async () => {
+    await renderWithTrack();
+    await userEvent.selectOptions(brevet(), 'Custom distance…');
+    await userEvent.selectOptions(brevet(), '200 km – limit 13:30');
+    expect(screen.queryByLabelText('Time limit (h:mm)')).not.toBeInTheDocument();
+    expect(table().at(-1)![4]).toBe('13:30');
+  });
+});

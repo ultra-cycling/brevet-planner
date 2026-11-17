@@ -1,12 +1,12 @@
-import { checkpointReducer, initialCheckpointState, type Checkpoint, type CheckpointSource } from './checkpoints';
-import type { ControlKind } from './controls/ControlRules';
-import type { PlanState } from './planState';
-import { isValidDate, normalizeTimeOfDay } from './time/clock';
-import type { EstimatorRegistry } from './time/registry';
-import { resolveParams } from './time/TimeEstimator';
-import { isValidTimeZone } from './time/timeZone';
-import { positionAtDistance } from './track/snap';
-import type { Track } from './track/track';
+import { checkpointReducer, initialCheckpointState, type Checkpoint, type CheckpointSource } from './checkpoints.ts';
+import type { ControlKind } from './controls/ControlRules.ts';
+import type { PlanState } from './planState.ts';
+import { isValidDate, normalizeTimeOfDay } from './time/clock.ts';
+import type { EstimatorRegistry } from './time/registry.ts';
+import { resolveParams } from './time/TimeEstimator.ts';
+import { isValidTimeZone } from './time/timeZone.ts';
+import { positionAtDistance } from './track/snap.ts';
+import type { Track } from './track/track.ts';
 
 /**
  * Plan file (`<name>.plan.json`, US5): the planning decisions of a route plan, stored next to its GPX track.
@@ -14,7 +14,7 @@ import type { Track } from './track/track';
  * Bump PLAN_FILE_VERSION on incompatible changes and add a migration step to `migratePlanFile`.
  */
 export const PLAN_FILE_FORMAT = 'brevet-planner-plan';
-export const PLAN_FILE_VERSION = 1;
+export const PLAN_FILE_VERSION = 2;
 
 export interface PlanFileCheckpoint {
   id: string;
@@ -40,6 +40,8 @@ export interface PlanFile {
   /** Key figures for the plan list – informational, recalculated when the plan is opened */
   summary: { distanceKm: number; climbM: number; checkpoints: number };
   brevetKm: number | null;
+  /** Time limit of a custom brevet in minutes (US16, since version 2); `null` = the rules' limit of `brevetKm` */
+  customTimeLimitMin: number | null;
   start: { date: string; time: string };
   timeZone: string;
   tightBufferMin: number;
@@ -92,6 +94,7 @@ export function toPlanFile(state: PlanState, now = new Date()): PlanFile {
       checkpoints: controls.filter((cp) => cp.kind === 'control').length,
     },
     brevetKm: state.checkpoints.brevetKm,
+    customTimeLimitMin: state.checkpoints.customLimitMin,
     start: { ...state.start },
     timeZone: state.timeZone,
     tightBufferMin: state.tightBufferMin,
@@ -118,8 +121,10 @@ export function migratePlanFile(raw: Record<string, unknown>): Record<string, un
       `The plan was saved by a newer version of the app (format version ${version}, this app reads up to ${PLAN_FILE_VERSION}).`,
     );
   }
-  // version 1 is the current format – future migrations go here: if (version === 1) raw = { ...raw, …, version: 2 }
-  return raw;
+  let migrated = raw;
+  // 1 → 2: custom brevets (US16) – plans of version 1 always use a standard distance or no fixed limit
+  if (migrated.version === 1) migrated = { ...migrated, customTimeLimitMin: null, version: 2 };
+  return migrated;
 }
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -215,6 +220,7 @@ export function parsePlanFile(text: string): PlanFile {
       checkpoints: typeof summary.checkpoints === 'number' ? summary.checkpoints : 0,
     },
     brevetKm: plan.brevetKm === null || plan.brevetKm === undefined ? null : num(plan, 'brevetKm', 'brevetKm', 0),
+    customTimeLimitMin: nullableNum(plan, 'customTimeLimitMin', 'customTimeLimitMin'),
     start: { date, time },
     timeZone,
     tightBufferMin: num(plan, 'tightBufferMin', 'tightBufferMin', 0),
@@ -238,7 +244,10 @@ export function planStateFromFile(file: PlanFile, track: Track, id: string, esti
     throw new PlanFileError('invalid', `"timeModel.params": ${(error as Error).message}`);
   }
 
-  let state = initialCheckpointState(track, file.brevetKm);
+  if (file.customTimeLimitMin !== null && file.brevetKm === null) {
+    throw new PlanFileError('invalid', '"customTimeLimitMin" needs a "brevetKm"');
+  }
+  let state = initialCheckpointState(track, file.brevetKm, file.customTimeLimitMin);
   for (const cp of file.checkpoints) {
     if (cp.kind === 'control') {
       if (cp.distanceKm <= 0 || cp.distanceKm >= track.distanceKm) {

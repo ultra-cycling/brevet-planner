@@ -142,6 +142,32 @@ describe('plan file (US5)', () => {
     expect(() => planStateFromFile(outside, track, 'x', estimators)).toThrow(PlanFileError);
   });
 
+  it('saves and restores a custom brevet (US16)', () => {
+    const state = planReducer(plannedState(), {
+      type: 'checkpoints',
+      action: { type: 'setCustomBrevet', brevetKm: 210, limitMin: 12 * 60 },
+    });
+    const file = toPlanFile(state);
+    expect(file).toMatchObject({ brevetKm: 210, customTimeLimitMin: 720 });
+    const restored = roundTrip(state);
+    expect(restored.checkpoints).toMatchObject({ brevetKm: 210, customLimitMin: 720 });
+    expect(controlRows(restored.checkpoints, acpControlRules).at(-1)!.window.closeMin).toBe(720);
+  });
+
+  it('migrates version 1 plans (before custom brevets) to the current version', () => {
+    const { customTimeLimitMin: _custom, ...current } = toPlanFile(plannedState());
+    const v1 = { ...current, version: 1 };
+    const file = parsePlanFile(JSON.stringify(v1));
+    expect(file.version).toBe(PLAN_FILE_VERSION);
+    expect(file.customTimeLimitMin).toBeNull();
+    expect(planFingerprint(planStateFromFile(file, track, 'line-200', estimators))).toBe(planFingerprint(plannedState()));
+  });
+
+  it('rejects a custom time limit without brevet distance', () => {
+    const file = { ...toPlanFile(plannedState()), brevetKm: null, customTimeLimitMin: 600 };
+    expect(() => planStateFromFile(file, track, 'x', estimators)).toThrow(/customTimeLimitMin/);
+  });
+
   it('derives file names from plan names', () => {
     expect(planFileId('PBP 2027 – Paris/Brest')).toBe('pbp-2027-paris-brest');
     expect(planFileId('Bodensee – Ü 300')).toBe('bodensee-u-300');

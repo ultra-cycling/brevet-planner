@@ -102,6 +102,13 @@ describe('Route plans (US5)', () => {
     expect(tracks.getByTestId('track-without-plan')).toHaveTextContent('Unplanned routeunplanned.gpx');
   });
 
+  it('shows the distance and time limit of a custom brevet on its card (US16)', async () => {
+    const files = samplePlanFiles();
+    const plan = { ...JSON.parse(files['line-200.plan.json']), brevetKm: 210, customTimeLimitMin: 12 * 60 };
+    await renderApp(new InMemoryPlanRepository({ ...files, 'line-200.plan.json': JSON.stringify(plan) }));
+    expect(await screen.findByRole('link', { name: /Line 200 – spring/ })).toHaveTextContent('210 km brevet, limit 12:00');
+  });
+
   it('explains how to add plans when the folder is empty', async () => {
     await renderApp(new InMemoryPlanRepository());
     expect(await screen.findByTestId('plans-empty')).toHaveTextContent('No saved plans yet.');

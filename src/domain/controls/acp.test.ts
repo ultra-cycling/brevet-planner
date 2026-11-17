@@ -60,3 +60,37 @@ describe('ACP control rules', () => {
     expect(acp.timeLimitMin(250)).toBeNull();
   });
 });
+
+describe('ACP control rules – custom brevet (US16)', () => {
+  const custom = (km: number, brevetKm: number, limitMin: number, kind: 'start' | 'control' | 'finish' = 'control') => {
+    const w = acp.window(km, kind, brevetKm, limitMin);
+    return `${formatElapsed(w.openMin)}–${formatElapsed(w.closeMin)}`;
+  };
+
+  it('proposes the limit of the closing formula for any distance', () => {
+    expect(formatElapsed(acp.defaultTimeLimitMin(250))).toBe('16:40'); // 250 km at 15 km/h
+    expect(formatElapsed(acp.defaultTimeLimitMin(200))).toBe('13:20'); // the formula, not the fixed 13:30
+    expect(formatElapsed(acp.defaultTimeLimitMin(50))).toBe('3:30'); // first 60 km: 20 km/h + 1 h
+  });
+
+  it('closes the finish at the custom limit, openings stay as in the rules', () => {
+    expect(custom(250, 250, 15 * 60, 'finish')).toBe('7:27–15:00'); // 200 km at 34 + 50 km at 32 km/h
+    expect(custom(260, 250, 15 * 60, 'finish')).toBe('7:27–15:00'); // beyond the nominal distance
+  });
+
+  it('scales the closing times of the other controls to the custom limit', () => {
+    // formula limit for 250 km: 16:40 → a 15:00 limit is 0.9 of it
+    expect(custom(100, 250, 15 * 60)).toBe('2:56–6:00'); // 6:40 × 0.9
+    expect(custom(30, 250, 15 * 60)).toBe('0:53–2:15'); // early control: 2:30 × 0.9
+    // a more generous limit: 20:00 → × 1.2
+    expect(custom(100, 250, 20 * 60)).toBe('2:56–8:00');
+  });
+
+  it('keeps the start window', () => {
+    expect(custom(0, 250, 15 * 60, 'start')).toBe('0:00–1:00');
+  });
+
+  it('is the formula itself when the custom limit equals the proposal', () => {
+    expect(custom(175, 250, acp.defaultTimeLimitMin(250))).toBe(fmt(175, null));
+  });
+});

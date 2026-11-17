@@ -1,6 +1,7 @@
 import { Alert, Button, Col, Container, Row, Spinner } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import type { PlanEntry, PlanListing, TrackEntry } from '../../storage/PlanRepository';
+import { formatElapsed } from '../../domain/time/duration';
 import { useFormat } from '../../i18n/useFormat';
 import { GpxDropZone } from '../track/GpxDropZone';
 
@@ -145,7 +146,11 @@ function PlanCard({ plan, onOpen }: { plan: PlanEntry; onOpen: (id: string) => v
     plan.summary && format.km(plan.summary.distanceKm),
     plan.summary && `↑${format.m(plan.summary.climbM)}`,
     plan.summary && t('start.checkpoints', { count: plan.summary.checkpoints }),
-    plan.brevetKm ? t('start.brevet', { km: plan.brevetKm }) : null,
+    plan.brevetKm
+      ? plan.customTimeLimitMin
+        ? t('controls.customBrevet', { km: plan.brevetKm, limit: formatElapsed(plan.customTimeLimitMin) })
+        : t('start.brevet', { km: plan.brevetKm })
+      : null,
   ].filter(Boolean);
   return (
     <a

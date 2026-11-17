@@ -1,5 +1,5 @@
-import { parsePlanFile, PLAN_FILE_SUFFIX } from '../domain/planFile';
-import type { PlansIndex } from './plansIndexFormat';
+import { parsePlanFile, PLAN_FILE_SUFFIX } from '../domain/planFile.ts';
+import type { PlansIndex } from './plansIndexFormat.ts';
 
 export interface FolderFile {
   name: string;
@@ -39,6 +39,7 @@ export function buildPlansIndex(files: readonly FolderFile[]): PlansIndex {
         track: plan.track,
         summary: plan.summary,
         brevetKm: plan.brevetKm,
+        ...(plan.customTimeLimitMin !== null ? { customTimeLimitMin: plan.customTimeLimitMin } : {}),
         start: plan.start,
         updatedAt: plan.updatedAt,
         ...(gpx.has(plan.track) ? {} : { error: `The track ${plan.track} is missing in the plans folder.` }),

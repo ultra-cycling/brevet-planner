@@ -17,6 +17,8 @@ export interface PlansIndexPlan {
   track?: string;
   summary?: { distanceKm: number; climbM: number; checkpoints: number };
   brevetKm?: number | null;
+  /** Time limit of a custom brevet (US16) */
+  customTimeLimitMin?: number | null;
   start?: { date: string; time: string };
   updatedAt?: string;
   /** Why the plan can't be opened (invalid file, missing track) */

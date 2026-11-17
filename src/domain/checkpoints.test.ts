@@ -147,3 +147,22 @@ describe('moving a checkpoint (US9)', () => {
     expect(moveConflict(checkpoints, 'cp0', 100.2)).toBeUndefined();
   });
 });
+
+describe('custom brevet (US16)', () => {
+  it('uses the custom distance and time limit for all control windows', () => {
+    let state = withControls(100);
+    state = checkpointReducer(state, { type: 'setCustomBrevet', brevetKm: 210, limitMin: 12 * 60 });
+    expect(state).toMatchObject({ brevetKm: 210, customLimitMin: 720 });
+    const rows = controlRows(state, acpControlRules);
+    expect(rows.at(-1)!.window.closeMin).toBe(720); // finish closes at the custom limit
+    expect(rows[1].window).toEqual(acpControlRules.window(100, 'control', 210, 720));
+    expect(rows[1].window.closeMin).toBeLessThan(acpControlRules.window(100, 'control', 200).closeMin); // scaled
+  });
+
+  it('goes back to the standard rules when a standard distance is chosen', () => {
+    let state = checkpointReducer(withControls(), { type: 'setCustomBrevet', brevetKm: 210, limitMin: 720 });
+    state = checkpointReducer(state, { type: 'setBrevetKm', brevetKm: 200 });
+    expect(state).toMatchObject({ brevetKm: 200, customLimitMin: null });
+    expect(controlRows(state, acpControlRules).at(-1)!.window.closeMin).toBe(13 * 60 + 30);
+  });
+});
