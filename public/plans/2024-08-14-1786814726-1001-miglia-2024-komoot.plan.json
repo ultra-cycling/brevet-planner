@@ -17,12 +17,12 @@
     "time": "06:00"
   },
   "timeZone": "Europe/Berlin",
-  "tightBufferMin": 75,
+  "tightBufferMin": 15,
   "timeModel": {
     "id": "speed-climb",
     "params": {
-      "speedKmh": 28,
-      "climbRateMh": 700
+      "speedKmh": 23,
+      "climbRateMh": 500
     }
   },
   "checkpoints": [
