@@ -39,11 +39,34 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Morning loop' })).toBeInTheDocument();
     expect(screen.getByTestId('track-distance')).toHaveTextContent('22.2 km');
     expect(screen.getByTestId('track-climb')).toHaveTextContent('120 m');
-    expect(screen.getByTestId('track-descent')).toHaveTextContent('80 m');
-    expect(screen.getByTestId('track-maxElevation')).toHaveTextContent('620 m');
+    // one line with the key figures, labelled for screen readers (US15)
+    expect(screen.getByTestId('track-figures')).toHaveTextContent('Distance 22.2 km · Climb ↑ 120 m');
     expect(screen.getByTestId('track-map')).toHaveTextContent('Morning loop');
     expect(screen.getByRole('slider', { name: 'Elevation profile' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'New plan' })).not.toBeInTheDocument();
+  });
+
+  it('shows start → finish in the title row and the plan settings collapsed (US15)', async () => {
+    await renderWithServices(<App />);
+    await userEvent.upload(screen.getByLabelText('Choose GPX file'), gpxFile());
+    await screen.findByRole('heading', { level: 1, name: 'Morning loop' });
+    expect(screen.getByTestId('plan-schedule')).toHaveTextContent(/^\w{3}, \w{3} \d{1,2} 06:00 → 06:58$/);
+
+    // the toggle carries only its title; the settings (with the brevet distance) are behind it
+    const toggle = screen.getByRole('button', { name: 'Plan settings' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const settings = document.getElementById(toggle.getAttribute('aria-controls')!);
+    expect(settings).toContainElement(screen.getByLabelText('Start time'));
+    expect(settings).toContainElement(screen.getByLabelText('Brevet distance (ACP)'));
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+    // the totals are outside the settings, right above the timetable
+    const totals = screen.getByTestId('total-finish').closest('dl')!;
+    expect(settings).not.toContainElement(totals);
+    expect(totals.compareDocumentPosition(screen.getByRole('table')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('accepts a file dropped on the start screen', async () => {

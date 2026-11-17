@@ -38,7 +38,7 @@ verify them. Iterations and architecture: [plan.md](plan.md).
 | US12 | [Realistic climb from terrain data](features/us12-elevation-from-terrain-data.md)                | get the climb from terrain data, not only from the GPX        | Backlog |
 | US13 | [Fix the phone layout on iPhone](features/us13-phone-layout-fixes.md)                            | read map, profile and timetable on my iPhone                  | Backlog |
 | US14 | [Clean timetable with edit mode](features/us14-clean-timetable.md)                               | see a clean timetable and edit details on request             | Backlog |
-| US15 | [Compact plan summary](features/us15-compact-plan-summary.md)                                    | see a one-line plan overview with an edit button              | Backlog |
+| US15 | [Compact plan summary](features/us15-compact-plan-summary.md)                                    | see a one-line plan overview with the settings collapsed      | ✅ Done  |
 | US16 | [Custom brevet distance and time limit](features/us16-custom-brevet.md)                          | set a custom distance and time limit for non-standard events  | ✅ Done  |
 | US17 | [Waypoints import](features/us17-import-waypoints.md)                                            | import waypoints from GPS track                               | Backlog |
 

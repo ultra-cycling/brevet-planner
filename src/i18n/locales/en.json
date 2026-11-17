@@ -26,8 +26,7 @@
   "track": {
     "distance": "Distance",
     "climb": "Climb",
-    "descent": "Descent",
-    "maxElevation": "Highest point"
+    "schedule": "{{start}} → {{finish}}"
   },
   "map": {
     "label": "Map of the track",
@@ -164,7 +163,8 @@
       },
       "tightBuffer": "Tight below (min)",
       "invalidTightBuffer": "Enter whole minutes between 0 and {{max}}",
-      "timeZone": "Time zone"
+      "timeZone": "Time zone",
+      "toggle": "Plan settings"
     },
     "totals": {
       "ride": "Riding",
@@ -174,7 +174,8 @@
       "movingSpeed": "Moving avg.",
       "overallSpeed": "Overall avg.",
       "tightest": "Smallest buffer",
-      "tightestAt": "{{time}} at {{control}}"
+      "tightestAt": "{{time}} at {{control}}",
+      "label": "Totals of the plan"
     },
     "status": {
       "ok": "OK",

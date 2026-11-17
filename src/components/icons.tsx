@@ -88,3 +88,6 @@ export const EditIcon = (props: SVGProps<SVGSVGElement>) => (
 export const DownloadIcon = (props: SVGProps<SVGSVGElement>) => (
   <SmallIcon d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" {...props} />
 );
+
+/** Disclosure chevron, pointing right; rotate by 90° when expanded */
+export const ChevronIcon = (props: SVGProps<SVGSVGElement>) => <SmallIcon d="m9 6 6 6-6 6" {...props} />;

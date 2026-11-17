@@ -4,12 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { importWaypoints, type CheckpointAction, type CheckpointState } from '../../domain/checkpoints';
 import type { ControlRules } from '../../domain/controls/ControlRules';
 import { arrivalStatus } from '../../domain/status';
-import { formatElapsed, parseElapsed } from '../../domain/time/duration';
+import { formatElapsed } from '../../domain/time/duration';
 import type { EstimatorParamDef, EstimatorParams, TimeEstimator } from '../../domain/time/TimeEstimator';
 import type { Timetable, TimetableRow } from '../../domain/timetable';
 import type { Track } from '../../domain/track/track';
 import { useFormat } from '../../i18n/useFormat';
 import { RemoveIcon, ResetIcon } from '../icons';
+import { PlanTotals } from '../timetable/PlanTotals';
 import { StatusBadge } from '../timetable/StatusBadge';
 import type { TimeFormat } from '../timetable/useTimeFormat';
 import { CommitInput } from './CommitInput';
@@ -37,11 +38,9 @@ export interface CheckpointPanelProps {
   times: TimeFormat;
   /** Arrivals with less time left until the control closes are "tight" */
   tightBufferMin: number;
+  /** Formats a time as clock time (the finish in the totals) */
+  formatClock: (minutes: number) => string;
 }
-
-/** Value of the "custom distance" option of the brevet select */
-const CUSTOM = 'custom';
-const MAX_BREVET_KM = 5000;
 
 const parseNumber = (text: string) => {
   const value = Number(text.trim().replace(',', '.'));
@@ -63,6 +62,7 @@ export function CheckpointPanel({
   onActiveSegmentChange,
   times,
   tightBufferMin,
+  formatClock,
 }: CheckpointPanelProps) {
   const { t } = useTranslation();
   const format = useFormat();
@@ -197,64 +197,6 @@ export function CheckpointPanel({
             </h2>
             <p className="small text-body-secondary mb-0">{t('checkpoints.hint')}</p>
           </div>
-          <Form.Group controlId="brevet-km">
-            <Form.Label className="small mb-1">{t('controls.brevetDistance', { rules: rulesName })}</Form.Label>
-            <Form.Select
-              size="sm"
-              value={custom ? CUSTOM : (state.brevetKm ?? '')}
-              onChange={(e) => {
-                if (e.target.value === CUSTOM) {
-                  // proposal: the track's distance and the limit of the rules' formula for it (US16)
-                  const km = Math.max(1, Math.round(track.distanceKm));
-                  dispatch({ type: 'setCustomBrevet', brevetKm: km, limitMin: rules.defaultTimeLimitMin(km) });
-                } else {
-                  dispatch({ type: 'setBrevetKm', brevetKm: e.target.value === '' ? null : Number(e.target.value) });
-                }
-              }}
-            >
-              {rules.brevetDistancesKm.map((km) => (
-                <option key={km} value={km}>
-                  {t('controls.brevetOption', { km, limit: formatElapsed(rules.timeLimitMin(km)!) })}
-                </option>
-              ))}
-              <option value={CUSTOM}>{t('controls.custom')}</option>
-              <option value="">{t('controls.noBrevet')}</option>
-            </Form.Select>
-          </Form.Group>
-          {custom && (
-            <>
-              <Form.Group controlId="custom-brevet-km" className="custom-brevet-field">
-                <Form.Label className="small mb-1">{t('controls.customDistance')}</Form.Label>
-                <CommitInput
-                  size="sm"
-                  inputMode="decimal"
-                  className="text-end tabular-nums"
-                  value={String(state.brevetKm)}
-                  onCommit={(text) => {
-                    const km = parseNumber(text);
-                    if (km === null || km <= 0 || km > MAX_BREVET_KM) return t('controls.invalidDistance', { max: MAX_BREVET_KM });
-                    dispatch({ type: 'setCustomBrevet', brevetKm: km, limitMin: state.customLimitMin! });
-                    return null;
-                  }}
-                />
-              </Form.Group>
-              <Form.Group controlId="custom-brevet-limit" className="custom-brevet-field">
-                <Form.Label className="small mb-1">{t('controls.customLimit')}</Form.Label>
-                <CommitInput
-                  size="sm"
-                  inputMode="numeric"
-                  className="text-end tabular-nums"
-                  value={formatElapsed(state.customLimitMin!)}
-                  onCommit={(text) => {
-                    const minutes = parseElapsed(text);
-                    if (minutes === null || minutes <= 0) return t('controls.invalidLimit');
-                    dispatch({ type: 'setCustomBrevet', brevetKm: state.brevetKm!, limitMin: minutes });
-                    return null;
-                  }}
-                />
-              </Form.Group>
-            </>
-          )}
           {track.waypoints.length > 0 && (
             <Button variant="outline-primary" size="sm" onClick={onImport}>
               {t('checkpoints.import.button', { count: track.waypoints.length })}
@@ -267,6 +209,12 @@ export function CheckpointPanel({
             {importMessage}
           </Alert>
         )}
+
+        <PlanTotals
+          totals={timetable.totals}
+          formatClock={formatClock}
+          tightestLabel={timetable.totals.tightest ? controlLabel(timetable.totals.tightest.control) : null}
+        />
 
         <div className="table-responsive">
           <Table

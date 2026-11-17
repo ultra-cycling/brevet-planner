@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { stubTiles, uploadSample } from './helpers';
+import { openPlanSettings, stubTiles, uploadSample } from './helpers';
 
 const rows = (page: Page) => page.getByTestId('checkpoint-row');
 const minutes = (text: string | null) => {
@@ -20,6 +20,7 @@ test.describe('US6 – start time', () => {
     await page.goto('./');
     await uploadSample(page);
     await page.getByRole('button', { name: 'Import 3 GPX waypoints' }).click();
+    await openPlanSettings(page);
   });
 
   test('the timetable shows clock times from the start and follows changes of the start', async ({ page }) => {

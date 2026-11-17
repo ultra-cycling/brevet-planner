@@ -22,6 +22,7 @@ import { CheckpointPanel } from '../checkpoints/CheckpointPanel';
 import { useControlLabel } from '../checkpoints/useControlLabel';
 import { useAppServices } from '../../app/AppServices';
 import { SegmentStrip, type SegmentView } from '../segments/SegmentStrip';
+import { BrevetSettings } from '../checkpoints/BrevetSettings';
 import { PlanSettingsBar } from '../timetable/PlanSettingsBar';
 import { TimetableCards } from '../timetable/TimetableCards';
 import { useTimeFormat, type TimeDisplay } from '../timetable/useTimeFormat';
@@ -215,7 +216,13 @@ export function PlannerView({ plan, onChange }: PlannerViewProps) {
           </div>
         ) : (
           <div className="planner-sidebar" data-testid="planner-sidebar">
-            <TrackSummary track={track} name={plan.name} onRename={(name) => onChange({ type: 'rename', name })} />
+            <TrackSummary
+              track={track}
+              name={plan.name}
+              onRename={(name) => onChange({ type: 'rename', name })}
+              start={start}
+              finish={clock.format(timetable.totals.finishMin)}
+            />
             <PlanSettingsBar
               start={start}
               onStartChange={(next) => onChange({ type: 'setStart', start: next })}
@@ -225,7 +232,6 @@ export function PlannerView({ plan, onChange }: PlannerViewProps) {
               onTimeDisplayChange={setTimeDisplay}
               tightBufferMin={tightBufferMin}
               onTightBufferChange={(minutes) => onChange({ type: 'setTightBuffer', minutes })}
-              formatClock={clock.format}
               estimator={estimator}
               params={timeModel.params}
               onModelChange={(id) =>
@@ -241,8 +247,7 @@ export function PlannerView({ plan, onChange }: PlannerViewProps) {
                 })
               }
               onParamChange={(key, value) => onChange({ type: 'setTimeModelParam', key, value })}
-              totals={timetable.totals}
-              tightestLabel={timetable.totals.tightest ? controlLabel(timetable.totals.tightest.control) : null}
+              brevet={<BrevetSettings trackKm={track.distanceKm} state={checkpointState} rules={rules} dispatch={dispatch} />}
             />
             <CheckpointPanel
               track={track}
@@ -259,6 +264,7 @@ export function PlannerView({ plan, onChange }: PlannerViewProps) {
               onActiveSegmentChange={setActiveSegment}
               times={times}
               tightBufferMin={tightBufferMin}
+              formatClock={clock.format}
             />
           </div>
         )}

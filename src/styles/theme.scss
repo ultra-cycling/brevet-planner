@@ -724,5 +724,39 @@ path.track-hit:focus {
 // ---- Custom brevet (US16) ----
 
 .custom-brevet-field {
-  width: 7rem;
+  width: 8.5rem; // room for the label "Time limit (h:mm)" on one line
+}
+
+// ---- Compact plan summary (US15) ----
+// the toggle line of the collapsed plan settings: chevron and title
+
+.plan-settings-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.5rem;
+  row-gap: 0.125rem;
+  width: 100%;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: start;
+
+  &:focus-visible {
+    outline: 2px solid $checkpoint;
+    outline-offset: -2px;
+  }
+}
+
+.plan-settings-chevron {
+  flex: none;
+  transition: transform 0.15s ease-in-out;
+
+  [aria-expanded='true'] > & {
+    transform: rotate(90deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }

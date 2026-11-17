@@ -13,7 +13,20 @@ test.describe('US1 – show a track on a map', () => {
     expect(parseFloat(distance!)).toBeGreaterThan(95);
     expect(parseFloat(distance!)).toBeLessThan(115);
     await expect(page.getByTestId('track-climb')).toHaveText(/^[\d,]+ m$/);
-    await expect(page.getByTestId('track-maxElevation')).toHaveText(/^[\d,]+ m$/);
+
+    // compact header (US15): one line with name, figures and start → finish, the plan settings collapsed
+    await expect(page.getByTestId('plan-schedule')).toHaveText(/06:00 → .*\d:\d\d$/);
+    const toggle = page.getByRole('button', { name: 'Plan settings' });
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.getByLabel('Brevet distance (ACP)')).toBeHidden();
+    await expect(page.getByTestId('total-finishAt')).toBeVisible(); // the totals stay visible above the timetable
+    await expect(page.getByLabel('Start time')).toBeHidden();
+    // (on the tablet the map is above the plan – measured from the plan name)
+    const name = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
+    const timetable = (await page.getByRole('heading', { name: 'Checkpoints & timetable' }).boundingBox())!;
+    expect(timetable.y - name.y).toBeLessThan(150);
+    await toggle.click();
+    await expect(page.getByLabel('Start time')).toBeVisible();
 
     // map with route line, start/finish markers, cycling tiles and attribution
     const map = page.getByRole('region', { name: 'Map of the track' });

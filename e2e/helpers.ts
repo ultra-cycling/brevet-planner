@@ -24,8 +24,16 @@ export async function uploadSample(page: Page) {
   await expect(page.getByRole('heading', { level: 1, name: 'Sample loop' })).toBeVisible();
 }
 
+/** Opens the plan settings (start, pace, totals) – collapsed when a plan is opened (US15) */
+export async function openPlanSettings(page: Page) {
+  const toggle = page.getByRole('button', { name: 'Plan settings' });
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+  await expect(page.getByLabel('Start time')).toBeVisible();
+}
+
 /** Shows the timetable in hours:minutes since the start (the default is clock time, US6) */
 export async function showTimesSinceStart(page: Page) {
+  await openPlanSettings(page);
   // the radio itself is visually hidden behind its button-styled label
   await page.locator('label[for="time-display-elapsed"]').click();
   await expect(page.getByRole('radio', { name: 'Since start' })).toBeChecked();

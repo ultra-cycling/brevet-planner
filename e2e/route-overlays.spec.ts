@@ -1,10 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
-import { stubTiles, uploadSample } from './helpers';
+import { openPlanSettings, stubTiles, uploadSample } from './helpers';
 
 const legendKm = async (page: Page) =>
   (await page.getByTestId('legend-item').allTextContents()).map((text) => Number(text.match(/([\d.,]+) km$/)![1]));
 
 async function setStart(page: Page, date: string, time: string) {
+  await openPlanSettings(page);
   await page.getByLabel('Time zone').selectOption('UTC');
   await page.getByLabel('Start date').fill(date);
   const input = page.getByLabel('Start time');

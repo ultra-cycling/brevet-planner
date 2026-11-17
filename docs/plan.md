@@ -29,6 +29,7 @@ stories that aren't built yet are marked *proposed* and are refined at the start
 | 9  | ✅      | [US8 – Trackpoint tooltip](features/us08-trackpoint-tooltip.md): distance and expected times when hovering the route                                                                                    |
 | 10 | ✅      | [US5 – Manage multiple route plans](features/us05-multiple-route-plans.md): plan files in `public/plans/`, start screen, plan menu, download, URL per plan                                              |
 | 11 | ✅      | [US16 – Custom brevet](features/us16-custom-brevet.md): custom distance and time limit, closing times scaled to the limit                                                                               |
+| 12 | ✅      | [US15 – Compact plan summary](features/us15-compact-plan-summary.md): title row with distance, climb and start → finish; plan settings incl. brevet collapsed; totals above the timetable               |
 
 US5 stores plans as files in the repository for now; a database/backend storage is a later story (the storage
 interface is prepared for it).
@@ -40,14 +41,13 @@ Stories captured but not yet scheduled; their acceptance criteria are proposals 
 
 | Story                                                                                    | Scope                                                                                       | Kind                      |
 |------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------|
-| [US15 – Compact plan summary](features/us15-compact-plan-summary.md)                     | one-line overview at the top of the plan column, settings behind an *Edit* button           | improvement, details open |
 | [US14 – Clean timetable with edit mode](features/us14-clean-timetable.md)                | read-only timetable by default, details of a checkpoint behind an *Edit* button             | improvement, details open |
 | [US12 – Realistic climb from terrain data](features/us12-elevation-from-terrain-data.md) | elevations from a digital elevation model, climb comparable to other planners               | feature                   |
 | [US11 – Overlapping track sections](features/us11-overlapping-track-sections.md)         | parallel lines and direction arrows where the track runs along itself; unambiguous clicking | feature                   |
 | [US10 – PDF export of the legs](features/us10-pdf-export.md)                             | PDF with overview and one section per leg: profile, distances, times                        | feature                   |
 | [US13 – Fix the phone layout on iPhone](features/us13-phone-layout-fixes.md)             | elevation profile overlaps other content on iPhone; test the phone layout in WebKit         | bug, details open         |
 
-Suggested order (top to bottom): US15 and US14 change the plan column, which the PDF export and later features build
+Suggested order (top to bottom): US14 changes the plan column, which the PDF export and later features build
 on; US12 corrects the numbers everything else is calculated from; the iPhone fixes (US13) come last, once the plan
 column has its new design.
 
@@ -62,10 +62,11 @@ Design canvas (proposals A, B, C and the chosen hybrid): <https://claude.ai/arti
 1. **Header** – brand (→ start screen), plan menu (saved plans, *New plan from GPX…*, *All plans*), *Not saved*
    badge, *Download plan*, language selector (US5). Without an open plan: the **start screen** with *New plan*
    (upload/drop a GPX) next to *Saved plans* and *Tracks without plan*.
-2. **Plan column (left, scrolls on its own)** – track summary; plan settings (start date & time, time zone (US7),
-   clock time / since start, tight threshold (US6); time model, speed and climb rate; totals: riding, stops, finish
-   after / at, average
-   speeds, smallest buffer); the editable timetable with
+2. **Plan column (left, scrolls on its own)** – title row: plan name (renamable), distance, climb and start → finish
+   (US15); *Plan settings* toggle, collapsed whenever a plan is opened; opened, it shows start date & time, time zone
+   (US7), clock time / since start, tight threshold (US6), brevet distance or custom distance and time limit (US16),
+   time model, speed and climb rate. Then the timetable section: hint, waypoint import, the totals (riding, stops,
+   finish after / at, average speeds, smallest buffer) right above the editable timetable with
    one row per control: name, km, segment (distance, ↑climb ↓descent), pace (speed, climb rate), ride time, arrival,
    control window (ACP, editable), rest, departure, buffer with status (US6).
 3. **Map pane (right, fixed)** – CyclOSM map with the track and checkpoint markers filling the remaining space, the
