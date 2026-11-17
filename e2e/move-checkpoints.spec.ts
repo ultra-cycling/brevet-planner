@@ -103,6 +103,14 @@ test.describe('US9 – move checkpoints', () => {
   });
 
   test('a checkpoint can not be dropped next to another one, and moving past it renumbers', async ({ page }) => {
+    // the browser must not take over a drag (text selection / native drag and drop cancel the pointer)
+    await page.evaluate(() => {
+      const w = window as unknown as { cancelled: string[] };
+      w.cancelled = [];
+      for (const type of ['pointercancel', 'dragstart']) document.addEventListener(type, () => w.cancelled.push(type), true);
+    });
+    const cancelled = () => page.evaluate(() => (window as unknown as { cancelled: string[] }).cancelled);
+
     await page.getByLabel('Add checkpoint at km').fill('60');
     await page.getByRole('button', { name: 'Add', exact: true }).click();
     await page.getByLabel('Name of CP1').fill('First');
@@ -115,9 +123,11 @@ test.describe('US9 – move checkpoints', () => {
     await drag(page, handle, cp2);
     await expect(page.getByTestId('announcement')).toHaveText('Too close to CP2 – checkpoints must be at least 100 m apart.');
     expect(await kmOf(page, 'CP1 First')).toBe(30);
+    expect(await page.evaluate(() => String(getSelection()))).toBe(''); // no text selected by the drag
 
     // past CP2: the controls are renumbered
     await drag(page, handle, { x: plot.x + plot.width * 0.9, y: handle.y });
+    expect(await cancelled()).toEqual([]);
     await expect(page.getByLabel('Name of CP2 First')).toHaveValue('First');
     expect(await kmOf(page, 'CP1')).toBe(60);
   });

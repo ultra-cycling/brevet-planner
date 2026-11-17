@@ -153,6 +153,10 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
   height: var(--profile-height);
   cursor: crosshair;
   touch-action: none; // pointer drag scrubs the profile instead of scrolling
+  // dragging a checkpoint number must not select text: pressing on selected text starts the browser's own drag and
+  // drop, which cancels the pointer (`pointercancel`) and with it the checkpoint drag
+  user-select: none;
+  -webkit-user-select: none;
   border-radius: 0.25rem;
 
   &:focus-visible {

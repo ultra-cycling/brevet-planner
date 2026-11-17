@@ -166,6 +166,8 @@ export function ElevationProfile({
             onClick={onPick ? (e) => onPick(track.points[indexAt(e.clientX)].distanceKm) : undefined}
             onKeyDown={onKeyDown}
             onBlur={() => onActiveIndexChange(null)}
+            // no native drag and drop from the plot – it would cancel the pointer and a checkpoint drag with it
+            onDragStart={(e) => e.preventDefault()}
           >
             <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="none" aria-hidden="true" className="d-block w-100 h-100">
               <path d={paths.area} className="profile-area" />
