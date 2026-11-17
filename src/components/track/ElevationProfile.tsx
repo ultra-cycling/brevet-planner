@@ -29,6 +29,14 @@ export interface ElevationProfileProps {
   footer?: ReactNode;
 }
 
+/** A checkpoint line being dragged; `offsetKm`: where the handle was grabbed relative to the line */
+interface ProfileDrag {
+  id: string;
+  distanceKm: number;
+  pointerId: number;
+  offsetKm: number;
+}
+
 export function ElevationProfile({
   track,
   activeIndex,
@@ -45,14 +53,24 @@ export function ElevationProfile({
   const plotRef = useRef<HTMLDivElement>(null);
   // checkpoint being dragged on the profile
   // `offsetKm`: where the handle was grabbed relative to the line – kept while dragging, so the line doesn't jump
-  const [drag, setDrag] = useState<{ id: string; distanceKm: number; pointerId: number; offsetKm: number } | null>(null);
+  const [drag, setDragState] = useState<ProfileDrag | null>(null);
+  // the pointer handlers read the drag from the ref: pointer events can arrive faster than React re-renders (slow
+  // devices), and the state captured by the last render would then miss the pointer down or the latest move
+  const dragRef = useRef<ProfileDrag | null>(null);
+  const setDrag = (next: ProfileDrag | null) => {
+    dragRef.current = next;
+    setDragState(next);
+  };
   const dragging = drag !== null;
 
   // Escape cancels the drag
   useEffect(() => {
     if (!dragging) return;
     const onKeyDown = (e: globalThis.KeyboardEvent) => {
-      if (e.key === 'Escape') setDrag(null);
+      if (e.key === 'Escape') {
+        dragRef.current = null;
+        setDragState(null);
+      }
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
@@ -84,6 +102,9 @@ export function ElevationProfile({
     return Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)) * track.distanceKm;
   };
   const indexAt = (clientX: number) => nearestPointIndex(track.points, kmAt(clientX));
+  /** Position of the dragged line for the pointer at `clientX` */
+  const dragKmAt = (clientX: number, d: ProfileDrag) =>
+    Math.min(track.distanceKm, Math.max(0, kmAt(clientX) - d.offsetKm));
 
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => onActiveIndexChange(indexAt(e.clientX));
 
@@ -190,18 +211,21 @@ export function ElevationProfile({
                     onPointerMove={
                       onCheckpointMove
                         ? (e) => {
-                            if (drag?.id !== cp.id || drag.pointerId !== e.pointerId) return;
-                            const km = kmAt(e.clientX) - drag.offsetKm;
-                            setDrag({ ...drag, distanceKm: Math.min(track.distanceKm, Math.max(0, km)) });
+                            const current = dragRef.current;
+                            if (current?.id !== cp.id || current.pointerId !== e.pointerId) return;
+                            setDrag({ ...current, distanceKm: dragKmAt(e.clientX, current) });
                           }
                         : undefined
                     }
                     onPointerUp={
                       onCheckpointMove
                         ? (e) => {
-                            if (drag?.id !== cp.id || drag.pointerId !== e.pointerId) return;
+                            const current = dragRef.current;
+                            if (current?.id !== cp.id || current.pointerId !== e.pointerId) return;
                             setDrag(null);
-                            if (drag.distanceKm !== cp.distanceKm) onCheckpointMove(cp.id, drag.distanceKm);
+                            // dropped where the pointer is released, even if the last move hasn't been rendered yet
+                            const km = dragKmAt(e.clientX, current);
+                            if (km !== cp.distanceKm) onCheckpointMove(cp.id, km);
                           }
                         : undefined
                     }

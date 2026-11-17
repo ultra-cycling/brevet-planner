@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -134,6 +134,17 @@ describe('ElevationProfile – moving checkpoints (US9)', () => {
     fireEvent.pointerMove(handle, { pointerId: 1, clientX: 304 });
     fireEvent.pointerUp(handle, { pointerId: 1, clientX: 304 });
     expect(onMove).toHaveBeenCalledWith('cp1', expect.closeTo(50, 1));
+  });
+
+  it('drops where the pointer is released, even when the events come faster than React renders (slow device)', async () => {
+    const { onMove, handle } = await renderProfile();
+    // all events before the next render – the handlers must not rely on the state of the last render
+    act(() => {
+      fireEvent.pointerDown(handle, { pointerId: 1, clientX: 180 });
+      fireEvent.pointerMove(handle, { pointerId: 1, clientX: 240 });
+      fireEvent.pointerUp(handle, { pointerId: 1, clientX: 400 }); // three quarters → km 75
+    });
+    expect(onMove).toHaveBeenCalledWith('cp1', expect.closeTo(75, 1));
   });
 
   it('cancels the drag with Escape', async () => {
