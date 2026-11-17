@@ -109,6 +109,15 @@ describe('Route plans (US5)', () => {
     expect(await screen.findByRole('link', { name: /Line 200 – spring/ })).toHaveTextContent('210 km brevet, limit 12:00');
   });
 
+  it('shows a loading state while the plans are read – valid HTML, no console errors', async () => {
+    const errors = vi.spyOn(console, 'error');
+    const slow = new InMemoryPlanRepository();
+    slow.list = () => new Promise(() => {}); // never answers
+    await renderApp(slow);
+    expect(screen.getByRole('status')).toHaveTextContent('Loading plans…');
+    expect(errors).not.toHaveBeenCalled();
+  });
+
   it('explains how to add plans when the folder is empty', async () => {
     await renderApp(new InMemoryPlanRepository());
     expect(await screen.findByTestId('plans-empty')).toHaveTextContent('No saved plans yet.');

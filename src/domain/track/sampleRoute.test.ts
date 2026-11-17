@@ -19,10 +19,13 @@ describe('300 km sample route', () => {
     expect(track.waypoints).toHaveLength(20);
   });
 
+  // the plan is real planning data and changes – compare with the file instead of fixed values
   it('opens with its plan file from the plans folder', () => {
     const file = parsePlanFile(readFileSync('public/plans/300km-sample-route.plan.json', 'utf8'));
     const plan = planStateFromFile(file, track, '300km-sample-route', createDefaultEstimatorRegistry());
-    expect(plan.checkpoints.checkpoints.map((cp) => cp.kind)).toEqual(['start', 'control', 'control', 'finish']);
+    const controls = plan.checkpoints.checkpoints;
+    expect(controls.map((cp) => [cp.kind, cp.name])).toEqual(file.checkpoints.map((cp) => [cp.kind, cp.name]));
+    expect(controls.filter((cp) => cp.kind === 'control')).toHaveLength(file.summary.checkpoints);
     expect(file.summary.distanceKm).toBeCloseTo(track.distanceKm, 0);
   });
 

@@ -101,7 +101,8 @@ export function App() {
         const plan = planStateFromFile(stored.plan, track, id, estimators);
         dispatch({ type: 'open', plan, gpx: stored.gpx, trackInRepo: true, saved: true });
       } catch (error) {
-        console.error(error);
+        // an unknown plan (e.g. an old link) is explained on the start screen – not an error of the app
+        if (!(error instanceof PlanStorageError && error.code === 'notFound')) console.error(error);
         setMessage(errorText(error, id));
         navigate(START_ROUTE, { replace: true });
       } finally {
@@ -228,7 +229,7 @@ export function App() {
         <PlannerView key={screenKey} plan={session.plan} onChange={onPlanChange} />
       ) : loadingId ? (
         <main className="flex-grow-1 d-flex align-items-center justify-content-center gap-2 text-body-secondary" role="status">
-          <Spinner size="sm" animation="border" aria-hidden="true" />
+          <Spinner as="span" size="sm" animation="border" aria-hidden="true" />
           {t('plans.loading')}
         </main>
       ) : (

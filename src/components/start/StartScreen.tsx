@@ -66,7 +66,7 @@ export function StartScreen(props: StartScreenProps) {
             </Alert>
           ) : listing === null ? (
             <p className="text-body-secondary d-flex align-items-center gap-2" role="status">
-              <Spinner size="sm" animation="border" aria-hidden="true" />
+              <Spinner as="span" size="sm" animation="border" aria-hidden="true" />
               {t('start.loading')}
             </p>
           ) : (

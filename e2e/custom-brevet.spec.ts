@@ -1,18 +1,19 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { showTimesSinceStart, stubTiles } from './helpers';
+import { sampleControls, SAMPLE_PLAN_ID } from './samplePlan';
 
 test.describe('US16 – custom brevet distance and time limit', () => {
   test.beforeEach(async ({ page }) => {
     await stubTiles(page);
-    await page.goto('./?plan=300km-sample-route');
-    await expect(page.getByTestId('checkpoint-row')).toHaveCount(4);
+    await page.goto(`./?plan=${SAMPLE_PLAN_ID}`);
+    await expect(page.getByTestId('checkpoint-row')).toHaveCount(sampleControls.length + 2);
     await showTimesSinceStart(page);
   });
 
   test('a custom distance and limit set the control windows and are saved with the plan', async ({ page }) => {
     const finishCloses = page.getByLabel('Closing time of Finish, hours after the start');
-    const cp1Closes = page.getByLabel('Closing time of CP1 Control 1 (placeholder), hours after the start');
+    const cp1Closes = page.getByLabel(`Closing time of ${sampleControls[0].label}, hours after the start`, { exact: true });
     await expect(finishCloses).toHaveValue('20:00'); // 300 km ACP
     const cp1Before = await cp1Closes.inputValue();
 
