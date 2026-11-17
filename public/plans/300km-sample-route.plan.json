@@ -1,16 +1,17 @@
 {
   "format": "brevet-planner-plan",
-  "version": 1,
+  "version": 2,
   "name": "G – Bodensee – G (300 km sample)",
   "track": "300km-sample-route.gpx",
   "createdAt": "2026-11-16T12:00:00.000Z",
-  "updatedAt": "2026-11-16T12:00:00.000Z",
+  "updatedAt": "2026-11-17T10:32:02.011Z",
   "summary": {
     "distanceKm": 309.3,
     "climbM": 727,
-    "checkpoints": 2
+    "checkpoints": 4
   },
   "brevetKm": 300,
+  "customTimeLimitMin": null,
   "start": {
     "date": "2027-05-01",
     "time": "06:00"
@@ -37,11 +38,33 @@
       "segmentParams": {}
     },
     {
+      "id": "e75b5d33-5a6b-44b7-b87b-62bf43428eac",
+      "kind": "control",
+      "name": "",
+      "source": "map",
+      "distanceKm": 75.1498,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
       "id": "cp-100",
       "kind": "control",
       "name": "Control 1 (placeholder)",
       "source": "km",
       "distanceKm": 100,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "bdbe6f48-ff13-4f22-b3fb-fc1bef980aa5",
+      "kind": "control",
+      "name": "",
+      "source": "map",
+      "distanceKm": 168.1623,
       "restMin": 15,
       "openOverrideMin": null,
       "closeOverrideMin": null,

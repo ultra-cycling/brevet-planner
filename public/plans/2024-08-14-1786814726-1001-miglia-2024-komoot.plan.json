@@ -1,0 +1,228 @@
+{
+  "format": "brevet-planner-plan",
+  "version": 2,
+  "name": "1001 Miglia 2024",
+  "track": "2024-08-14_1786814726_1001_Miglia_2024-komoot.gpx",
+  "createdAt": "2026-11-17T10:34:21.218Z",
+  "updatedAt": "2026-11-17T10:48:14.071Z",
+  "summary": {
+    "distanceKm": 1606.5,
+    "climbM": 12983,
+    "checkpoints": 16
+  },
+  "brevetKm": 1606,
+  "customTimeLimitMin": 8100,
+  "start": {
+    "date": "2026-11-17",
+    "time": "06:00"
+  },
+  "timeZone": "Europe/Berlin",
+  "tightBufferMin": 75,
+  "timeModel": {
+    "id": "speed-climb",
+    "params": {
+      "speedKmh": 28,
+      "climbRateMh": 700
+    }
+  },
+  "checkpoints": [
+    {
+      "id": "start",
+      "kind": "start",
+      "name": "",
+      "source": "track",
+      "distanceKm": 0,
+      "restMin": 0,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "84351781-ba96-416d-867c-b2569cb18f52",
+      "kind": "control",
+      "name": "Castellania Coppi",
+      "source": "map",
+      "distanceKm": 112.0334,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "bef898ba-0510-4225-b222-2984227844ed",
+      "kind": "control",
+      "name": "Casella",
+      "source": "map",
+      "distanceKm": 165.253,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "1018259a-58c3-4f38-88ab-8714951207aa",
+      "kind": "control",
+      "name": "Deiva Marina",
+      "source": "map",
+      "distanceKm": 257.4537,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "e256b73b-af9e-452e-9153-73017edb9cf9",
+      "kind": "control",
+      "name": "Gorfogliano",
+      "source": "map",
+      "distanceKm": 373.8073,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "9dce1700-f7a8-4d53-a5af-a1e54d9fe3e3",
+      "kind": "control",
+      "name": "Pontadera",
+      "source": "map",
+      "distanceKm": 489.7005,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "68c44c61-15d6-4eae-b917-afd9e2ba296b",
+      "kind": "control",
+      "name": "Castelnuovo Berardenga",
+      "source": "map",
+      "distanceKm": 614.0481,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "42ec775c-255a-4c0b-a3c3-403d3bd230ff",
+      "kind": "control",
+      "name": "San Quirico d'Orcia",
+      "source": "map",
+      "distanceKm": 674.4569,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "cfe40fee-9424-44be-98ec-67b2f1a84575",
+      "kind": "control",
+      "name": "Bolsena",
+      "source": "map",
+      "distanceKm": 781.6576,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "9de52392-a3fc-40c0-a08b-a4c53ffee116",
+      "kind": "control",
+      "name": "Tavernelle Sant'Eusebio",
+      "source": "map",
+      "distanceKm": 912.4155,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "fee8d2b1-3bad-47c3-8190-709c6298ec8a",
+      "kind": "control",
+      "name": "Matassino",
+      "source": "map",
+      "distanceKm": 993.754,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "577bda07-c0ad-4d86-aadf-aac0ce4716e1",
+      "kind": "control",
+      "name": "Dicomano",
+      "source": "map",
+      "distanceKm": 1047.6144,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "faf251da-4bdf-4c75-8de5-44fb6784dab2",
+      "kind": "control",
+      "name": "Palazzuolo sul Senio",
+      "source": "map",
+      "distanceKm": 1096.0134,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "a05ca53e-a3dd-4275-bbbb-eead2280c74b",
+      "kind": "control",
+      "name": "Lugo",
+      "source": "map",
+      "distanceKm": 1151.5213,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "f48741a4-b6ba-433e-9cc1-f6d8a45d662b",
+      "kind": "control",
+      "name": "Massa Finalese",
+      "source": "map",
+      "distanceKm": 1246.8606,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "0f66f171-1035-4e9d-8c65-28c41af8268c",
+      "kind": "control",
+      "name": "Coenzo",
+      "source": "map",
+      "distanceKm": 1392.9835,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "e7dd2c6e-ce91-4fee-9b7b-5c7d2389d85b",
+      "kind": "control",
+      "name": "Fombio",
+      "source": "map",
+      "distanceKm": 1483.0374,
+      "restMin": 15,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    },
+    {
+      "id": "finish",
+      "kind": "finish",
+      "name": "",
+      "source": "track",
+      "distanceKm": 1606.463,
+      "restMin": 0,
+      "openOverrideMin": null,
+      "closeOverrideMin": null,
+      "segmentParams": {}
+    }
+  ]
+}
