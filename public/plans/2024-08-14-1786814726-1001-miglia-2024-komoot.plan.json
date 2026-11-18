@@ -13,15 +13,15 @@
   "brevetKm": 1606,
   "customTimeLimitMin": 8100,
   "start": {
-    "date": "2026-11-17",
-    "time": "06:00"
+    "date": "2024-08-16",
+    "time": "19:35"
   },
   "timeZone": "Europe/Berlin",
   "tightBufferMin": 15,
   "timeModel": {
     "id": "speed-climb",
     "params": {
-      "speedKmh": 23,
+      "speedKmh": 22,
       "climbRateMh": 500
     }
   },
