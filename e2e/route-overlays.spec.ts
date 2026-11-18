@@ -66,7 +66,7 @@ test.describe('US7 – route overlays', () => {
       return { x: screen.x, y: screen.y };
     });
     await page.mouse.click(box.x, box.y);
-    await expect(page.getByTestId('checkpoint-row')).toHaveCount(3);
+    await expect(page.getByTestId('checkpoint-row')).toHaveCount(2);
   });
 
   test('the overlay panel stays inside the map and leaves the zoom buttons free', async ({ page }) => {

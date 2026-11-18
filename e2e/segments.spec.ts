@@ -37,7 +37,7 @@ test.describe('US3 – segments between checkpoints', () => {
     await expect(chip).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('path.segment-highlight')).toHaveCount(1);
     await expect(page.getByTestId('profile-range')).toBeVisible();
-    await expect(page.getByTestId('checkpoint-row').nth(2)).toHaveClass(/is-active-segment/);
+    await expect(page.getByTestId('checkpoint-row').nth(1)).toHaveClass(/is-active-segment/); // CP2: the segment ends there
 
     // the profile range spans from CP1 to CP2
     const range = (await page.getByTestId('profile-range').boundingBox())!;

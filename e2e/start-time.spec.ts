@@ -7,6 +7,13 @@ const minutes = (text: string | null) => {
   return h * 60 + m;
 };
 
+/** "Sat 13:30" or "13:30" shifted by `minutes` (same day) */
+const shiftClock = (time: string, minutes: number) =>
+  time.replace(/(\d\d):(\d\d)$/, (_, h, m) => {
+    const total = Number(h) * 60 + Number(m) + minutes;
+    return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+  });
+
 async function setStart(page: Page, date: string, time: string) {
   await page.getByLabel('Start date').fill(date);
   const input = page.getByLabel('Start time');
@@ -25,12 +32,12 @@ test.describe('US6 – start time', () => {
 
   test('the timetable shows clock times from the start and follows changes of the start', async ({ page }) => {
     await expect(page.getByLabel('Start time')).toHaveValue('06:00');
-    await expect(page.getByLabel('Opening time of Start')).toHaveValue('06:00');
+    await expect(page.getByTestId('plan-schedule')).toHaveText(/ 06:00 → /); // no start row (US14) – the title row has it
     const finishAfter = minutes(await page.getByTestId('total-finish').textContent());
 
     // a start late in the evening: the ride spans midnight, so times carry the weekday
     await setStart(page, '2026-11-14', '22:00'); // a Saturday
-    await expect(page.getByLabel('Opening time of Start')).toHaveValue('Sat 22:00');
+    await expect(page.getByTestId('plan-schedule')).toHaveText(/^Sat, Nov 14 22:00 → /);
     const finishAt = 22 * 60 + finishAfter;
     const expected = `${finishAt >= 24 * 60 ? 'Sun' : 'Sat'} ${String(Math.floor(finishAt / 60) % 24).padStart(2, '0')}:${String(finishAt % 60).padStart(2, '0')}`;
     await expect(page.getByTestId('total-finishAt')).toHaveText(expected);
@@ -41,14 +48,17 @@ test.describe('US6 – start time', () => {
     const table = await page.locator('.table-responsive').evaluate((el) => el.scrollWidth - el.clientWidth);
     expect(table).toBeLessThanOrEqual(0);
 
+    // the control windows follow the start: the finish opens and closes at the same times after the start
+    const finishWindow = async () =>
+      Promise.all(['Opening', 'Closing'].map((which) => page.getByLabel(`${which} time of Finish`).inputValue()));
+    await setStart(page, '2026-11-14', '06:00');
+    const [opens, closes] = await finishWindow();
     await setStart(page, '2026-11-14', '07:15');
-    await expect(page.getByLabel('Opening time of Start')).toHaveValue('07:15');
-    await expect(page.getByLabel('Closing time of Start')).toHaveValue('08:15');
+    expect(await finishWindow()).toEqual([opens, closes].map((t) => shiftClock(t, 75)));
   });
 
   test('every arrival has a status as text, and the tight threshold can be changed', async ({ page }) => {
-    await expect(rows(page)).toHaveCount(5);
-    await expect(rows(page).first().getByTestId('status')).toHaveCount(0); // start
+    await expect(rows(page)).toHaveCount(4);
     const table = page.locator('.checkpoint-table'); // (the phone cards are hidden on this width)
     const statuses = await table.getByTestId('status').allTextContents();
     expect(statuses).toHaveLength(4);
@@ -61,11 +71,11 @@ test.describe('US6 – start time', () => {
     await expect(table.getByTestId('status').filter({ hasText: 'OK' })).toHaveCount(0);
 
     // a closing time before the arrival → late
-    const arrival = await page.getByTestId('arrival').nth(1).textContent();
+    const arrival = await page.getByTestId('arrival').first().textContent();
     const closes = page.getByLabel('Closing time of CP1 Riverside Café');
     await closes.fill('06:01');
     await closes.press('Enter');
     expect(minutes(arrival)).toBeGreaterThan(6 * 60 + 1);
-    await expect(rows(page).nth(1).getByTestId('status')).toHaveText('Late');
+    await expect(rows(page).first().getByTestId('status')).toHaveText('Late'); // CP1
   });
 });

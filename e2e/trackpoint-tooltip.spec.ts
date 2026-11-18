@@ -66,10 +66,10 @@ test.describe('US8 – trackpoint tooltip', () => {
     await expect(popup.getByTestId('position-expected')).toHaveText(/^Expected \d\d:\d\d/);
     await expect(popup).not.toContainText('Click to add');
     await expect(page.getByTestId('profile-cursor')).toBeVisible(); // the tapped position on the profile
-    await expect(page.getByTestId('checkpoint-row')).toHaveCount(5); // nothing added by the tap
+    await expect(page.getByTestId('checkpoint-row')).toHaveCount(4); // nothing added by the tap
 
     await popup.getByRole('button', { name: 'Add checkpoint here' }).tap();
-    await expect(page.getByTestId('checkpoint-row')).toHaveCount(6);
+    await expect(page.getByTestId('checkpoint-row')).toHaveCount(5);
     await expect(popup).toBeHidden();
   });
 });

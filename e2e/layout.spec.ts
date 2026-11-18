@@ -12,7 +12,7 @@ test.describe('Planner layout', () => {
       await page.getByLabel('Add checkpoint at km').fill(String(km));
       await page.getByLabel('Add checkpoint at km').press('Enter');
     }
-    await expect(page.getByTestId('checkpoint-row')).toHaveCount(13);
+    await expect(page.getByTestId('checkpoint-row')).toHaveCount(12);
   });
 
   test('the plan sits in its own column next to (desktop) or below (tablet) the map', async ({ page }, testInfo) => {

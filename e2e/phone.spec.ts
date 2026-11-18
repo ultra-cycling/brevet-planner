@@ -33,8 +33,7 @@ test.describe('Phone layout – map, elevation profile and timetable, read-only'
     expect(profile.y).toBeGreaterThanOrEqual(map.y + map.height - 1);
     expect(timetable.y).toBeGreaterThan(profile.y + profile.height - 1);
 
-    await expect(cards(page)).toHaveCount(2);
-    await expect(cards(page).first()).toContainText('Start');
+    await expect(cards(page)).toHaveCount(1); // no card for the start (US14) – its time is in the summary
     await expect(cards(page).last()).toContainText('Finish');
 
     // nothing to edit
@@ -60,7 +59,7 @@ test.describe('Phone layout – map, elevation profile and timetable, read-only'
 
     const profile = (await page.getByRole('slider', { name: 'Elevation profile' }).boundingBox())!;
     await page.touchscreen.tap(profile.x + profile.width / 2, profile.y + profile.height / 2);
-    await expect(cards(page)).toHaveCount(2);
+    await expect(cards(page)).toHaveCount(1);
   });
 
   test('a plan prepared on a wider screen is shown as cards with arrival, status, window and buffer', async ({ page }) => {
@@ -68,8 +67,8 @@ test.describe('Phone layout – map, elevation profile and timetable, read-only'
     await page.getByRole('button', { name: 'Import 3 GPX waypoints' }).click();
     await page.setViewportSize(PHONE);
 
-    await expect(cards(page)).toHaveCount(5);
-    const cp1 = cards(page).nth(1);
+    await expect(cards(page)).toHaveCount(4);
+    const cp1 = cards(page).first();
     await expect(cp1).toContainText('CP1 Riverside Café');
     await expect(cp1.getByTestId('card-arrival')).toHaveText(/^\d\d:\d\d$/);
     await expect(cp1.getByTestId('status')).toHaveText(/^(OK|Tight|Early|Late)$/);

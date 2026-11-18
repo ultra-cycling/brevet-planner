@@ -18,8 +18,7 @@ test.describe('US4 – riding and rest times', () => {
 
   test('the timetable adds up riding and rest times', async ({ page }) => {
     const arrivals = await page.getByTestId('arrival').allTextContents();
-    expect(arrivals[0]).toBe(''); // start
-    const times = arrivals.slice(1).map(minutes);
+    const times = arrivals.map(minutes); // no start row (US14)
     expect(times).toEqual([...times].sort((a, b) => a - b)); // later along the track = later in time
 
     const ride = minutes(await page.getByTestId('total-ride').textContent());
@@ -42,9 +41,9 @@ test.describe('US4 – riding and rest times', () => {
     const climbRate = page.getByLabel('Climb rate (m/h) to CP2 Mountain Pass');
     await climbRate.fill('400');
     await climbRate.press('Enter');
-    await expect(page.getByTestId('ride-time').nth(2)).not.toHaveText(ridesBefore[2]);
+    await expect(page.getByTestId('ride-time').nth(1)).not.toHaveText(ridesBefore[1]);
     const ridesAfter = await page.getByTestId('ride-time').allTextContents();
-    expect(ridesAfter.filter((_, i) => i !== 2)).toEqual(ridesBefore.filter((_, i) => i !== 2));
+    expect(ridesAfter.filter((_, i) => i !== 1)).toEqual(ridesBefore.filter((_, i) => i !== 1));
 
     // longer rest → later finish
     const finish = await finishAfter(page);

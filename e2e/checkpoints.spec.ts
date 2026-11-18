@@ -20,11 +20,11 @@ test.describe('US2 – mark checkpoints along the track', () => {
     await showTimesSinceStart(page);
   });
 
-  test('start and finish are controls with ACP windows', async ({ page }) => {
-    await expect(rows(page)).toHaveCount(2);
-    await expect(rows(page).first()).toContainText('Start');
-    await expect(page.getByLabel('Opening time of Start, hours after the start')).toHaveValue('0:00');
-    await expect(page.getByLabel('Closing time of Start, hours after the start')).toHaveValue('1:00');
+  test('the finish is a control with an ACP window – the start has no row', async ({ page }) => {
+    // no start row (US14): its time is in the title row of the plan, its window is fixed by the rules
+    await expect(rows(page)).toHaveCount(1);
+    await expect(rows(page).first()).toContainText('Finish');
+    await expect(page.getByLabel('Opening time of Start, hours after the start')).toHaveCount(0);
     // the ~100 km sample is no standard brevet → finish closes at 15 km/h
     await expect(page.getByRole('combobox', { name: 'Brevet distance (ACP)' })).toHaveValue('');
   });
@@ -33,7 +33,7 @@ test.describe('US2 – mark checkpoints along the track', () => {
     const { x, y } = await pointOnTrackLine(page, 0.25);
     await page.mouse.click(x + 3, y + 3); // slightly beside the line still hits it
 
-    await expect(rows(page)).toHaveCount(3);
+    await expect(rows(page)).toHaveCount(2);
     const km = Number(await page.getByLabel('Distance of CP1 in km').inputValue());
     expect(km).toBeGreaterThan(20);
     expect(km).toBeLessThan(32);
@@ -57,14 +57,14 @@ test.describe('US2 – mark checkpoints along the track', () => {
     const profile = page.getByRole('slider', { name: 'Elevation profile' });
     const box = (await profile.boundingBox())!;
     await page.mouse.click(box.x + box.width * 0.6, box.y + box.height / 2);
-    await expect(rows(page)).toHaveCount(3);
+    await expect(rows(page)).toHaveCount(2);
 
     await profile.focus();
     await page.keyboard.press('Home');
     for (let i = 0; i < 3; i++) await page.keyboard.press('Shift+ArrowRight');
     await page.keyboard.press('Enter');
 
-    await expect(rows(page)).toHaveCount(4);
+    await expect(rows(page)).toHaveCount(3);
     expect(Number(await page.getByLabel('Distance of CP1 in km').inputValue())).toBeCloseTo(30, -1);
     // markers are numbered by position along the track
     await expect(page.locator('.checkpoint-marker')).toHaveCount(2);
@@ -102,13 +102,13 @@ test.describe('US2 – mark checkpoints along the track', () => {
     await expect(closes).toHaveValue('5:20');
 
     await page.getByRole('button', { name: 'Remove CP1' }).click();
-    await expect(rows(page)).toHaveCount(2);
+    await expect(rows(page)).toHaveCount(1);
     await expect(page.locator('.checkpoint-marker')).toHaveCount(0);
   });
 
   test('the planner with checkpoints fits the viewport without horizontal scrolling', async ({ page }) => {
     await page.getByRole('button', { name: 'Import 3 GPX waypoints' }).click();
-    await expect(rows(page)).toHaveCount(5);
+    await expect(rows(page)).toHaveCount(4);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(0);
   });

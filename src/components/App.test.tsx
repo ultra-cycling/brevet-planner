@@ -175,7 +175,7 @@ describe('Route plans (US5)', () => {
     await renderApp();
     await userEvent.click(await screen.findByRole('button', { name: 'Start plan' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Unplanned route' })).toBeInTheDocument();
-    expect(screen.getAllByTestId('checkpoint-row')).toHaveLength(2); // start and finish
+    expect(screen.getAllByTestId('checkpoint-row')).toHaveLength(1); // the finish (no row for the start, US14)
     expect(screen.getByTestId('unsaved')).toHaveTextContent('Not saved');
     expect(window.location.search).toBe('?new');
   });

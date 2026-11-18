@@ -263,7 +263,10 @@ export function CheckpointPanel({
               </tr>
             </thead>
             <tbody>
-              {timetable.rows.map((entry) => {
+              {/* no row for the start (US14): its time is in the title row of the plan, its window is fixed by the rules */}
+              {timetable.rows
+                .filter((entry) => entry.control.checkpoint.kind !== 'start')
+                .map((entry) => {
                 const row = entry.control;
                 const cp = row.checkpoint;
                 const label = controlLabel(row);

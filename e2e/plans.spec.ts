@@ -29,10 +29,10 @@ test.describe('US5 – route plans in the plans folder', () => {
     const last = sampleControls.at(-1)!;
     if (testInfo.project.name === 'phone') {
       // read-only phone view: timetable cards
-      await expect(page.getByTestId('timetable-card')).toHaveCount(sampleControls.length + 2);
-      await expect(page.getByTestId('timetable-card').nth(sampleControls.length)).toContainText(last.label);
+      await expect(page.getByTestId('timetable-card')).toHaveCount(sampleControls.length + 1);
+      await expect(page.getByTestId('timetable-card').nth(sampleControls.length - 1)).toContainText(last.label);
     } else {
-      await expect(page.getByTestId('checkpoint-row')).toHaveCount(sampleControls.length + 2);
+      await expect(page.getByTestId('checkpoint-row')).toHaveCount(sampleControls.length + 1);
       await expect(page.getByLabel(`Name of ${last.label}`, { exact: true })).toHaveValue(last.name);
       await expect(page.getByLabel(`Distance of ${last.label} in km`, { exact: true })).toHaveValue(last.distanceKm.toFixed(1));
     }

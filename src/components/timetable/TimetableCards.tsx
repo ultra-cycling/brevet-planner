@@ -24,16 +24,18 @@ export function TimetableCards({ timetable, times, tightBufferMin }: TimetableCa
 
   return (
     <ol className="timetable-cards list-unstyled mb-0" aria-label={t('timetable.cards.label')}>
-      {timetable.rows.map((entry) => {
+      {/* no row for the start (US14): its time is in the title row of the plan, its window is fixed by the rules */}
+      {timetable.rows
+        .filter((entry) => entry.control.checkpoint.kind !== 'start')
+        .map((entry) => {
         const { control, segment } = entry;
         const cp = control.checkpoint;
         const status = arrivalStatus(entry, tightBufferMin);
-        const isStart = cp.kind === 'start';
         const facts: [string, string][] = [
           [t('checkpoints.columns.window'), `${times.format(control.window.openMin)} – ${times.format(control.window.closeMin)}`],
         ];
         if (entry.restMin > 0) facts.push([t('timetable.columns.rest'), t('timetable.cards.minutes', { count: entry.restMin })]);
-        if (entry.departureMin !== null && !isStart) facts.push([t('timetable.columns.depart'), times.format(entry.departureMin)]);
+        if (entry.departureMin !== null) facts.push([t('timetable.columns.depart'), times.format(entry.departureMin)]);
         if (segment) {
           facts.push([
             t('checkpoints.columns.segment'),
@@ -54,10 +56,10 @@ export function TimetableCards({ timetable, times, tightBufferMin }: TimetableCa
             </div>
             <div className="d-flex align-items-baseline flex-wrap column-gap-3 mt-1">
               <span className="small text-body-secondary">
-                {isStart ? t('timetable.cards.start') : t('timetable.columns.arrive')}
+                {t('timetable.columns.arrive')}
               </span>
               <span className="card-time tabular-nums fw-semibold" data-testid="card-arrival">
-                {times.format(isStart ? (entry.departureMin ?? 0) : entry.arrivalMin)}
+                {times.format(entry.arrivalMin)}
               </span>
               {status && (
                 <span className="ms-auto d-inline-flex align-items-baseline gap-2">

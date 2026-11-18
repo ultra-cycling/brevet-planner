@@ -7,7 +7,7 @@ test.describe('US16 – custom brevet distance and time limit', () => {
   test.beforeEach(async ({ page }) => {
     await stubTiles(page);
     await page.goto(`./?plan=${SAMPLE_PLAN_ID}`);
-    await expect(page.getByTestId('checkpoint-row')).toHaveCount(sampleControls.length + 2);
+    await expect(page.getByTestId('checkpoint-row')).toHaveCount(sampleControls.length + 1);
     await showTimesSinceStart(page);
   });
 

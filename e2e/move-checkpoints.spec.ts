@@ -99,7 +99,7 @@ test.describe('US9 – move checkpoints', () => {
     await drag(page, handle, { x: plot.x + plot.width * 0.75, y: handle.y });
 
     await expect.poll(() => kmOf(page, 'CP1')).toBeCloseTo(TOTAL_KM * 0.75, -0.5);
-    await expect(page.getByTestId('checkpoint-row')).toHaveCount(3); // moved, not added
+    await expect(page.getByTestId('checkpoint-row')).toHaveCount(2); // moved, not added
   });
 
   test('a checkpoint can not be dropped next to another one, and moving past it renumbers', async ({ page }) => {
@@ -136,8 +136,8 @@ test.describe('US9 – move checkpoints', () => {
     const start = await center(page, '.track-endpoint');
     await drag(page, start, { x: start.x - 80, y: start.y - 80 }); // pans the map instead
     const rows = page.getByTestId('checkpoint-row');
-    await expect(rows.first()).toContainText('0.0');
     await expect(rows.last()).toContainText(String(TOTAL_KM));
+    await expect(page.getByTestId('segment-chip').first()).toContainText('30.0 km'); // start → CP1: the start is still at km 0
     expect(await kmOf(page, 'CP1')).toBe(30);
   });
 });

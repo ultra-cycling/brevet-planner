@@ -41,7 +41,7 @@ Stories captured but not yet scheduled; their acceptance criteria are proposals 
 
 | Story                                                                                    | Scope                                                                                       | Kind                      |
 |------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------|
-| [US14 – Clean timetable with edit mode](features/us14-clean-timetable.md)                | read-only timetable by default, details of a checkpoint behind an *Edit* button             | improvement, details open |
+| [US14 – Clean timetable with edit mode](features/us14-clean-timetable.md)                | read-only timetable by default, details of a checkpoint behind an *Edit* button             | improvement, in progress  |
 | [US12 – Realistic climb from terrain data](features/us12-elevation-from-terrain-data.md) | elevations from a digital elevation model, climb comparable to other planners               | feature                   |
 | [US11 – Overlapping track sections](features/us11-overlapping-track-sections.md)         | parallel lines and direction arrows where the track runs along itself; unambiguous clicking | feature                   |
 | [US10 – PDF export of the legs](features/us10-pdf-export.md)                             | PDF with overview and one section per leg: profile, distances, times                        | feature                   |
@@ -67,7 +67,7 @@ Design canvas (proposals A, B, C and the chosen hybrid): <https://claude.ai/arti
    (US7), clock time / since start, tight threshold (US6), brevet distance or custom distance and time limit (US16),
    time model, speed and climb rate. Then the timetable section: hint, waypoint import, the totals (riding, stops,
    finish after / at, average speeds, smallest buffer) right above the editable timetable with
-   one row per control: name, km, segment (distance, ↑climb ↓descent), pace (speed, climb rate), ride time, arrival,
+   one row per control after the start (no start row, US14): name, km, segment (distance, ↑climb ↓descent), pace (speed, climb rate), ride time, arrival,
    control window (ACP, editable), rest, departure, buffer with status (US6).
 3. **Map pane (right, fixed)** – CyclOSM map with the track and checkpoint markers filling the remaining space, the
    route overlay selection and legend (US7) in its top right corner; elevation profile with the segment strip docked
@@ -104,7 +104,7 @@ only:
 
 1. the map with the track and the checkpoint markers (about 40 % of the screen height),
 2. the elevation profile with the segment strip,
-3. track name, distance, climb and start, followed by one card per control: name, km, arrival (large), status and
+3. track name, distance, climb and start, followed by one card per control after the start: name, km, arrival (large), status and
    buffer, control window, rest, departure, segment (distance, climb/descent, riding time).
 
 Plan settings, the editable table, the route overlays and all editing are left out; tapping the map or the profile
