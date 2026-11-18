@@ -68,7 +68,8 @@ Design canvas (proposals A, B, C and the chosen hybrid): <https://claude.ai/arti
    time model, speed and climb rate. Then the timetable section: hint, waypoint import, the totals (riding, stops,
    finish after / at, average speeds, smallest buffer) right above the editable timetable with
    one row per control after the start (no start row, US14): name, km, segment (distance, ↑climb ↓descent), pace (speed, climb rate), ride time, arrival,
-   control window (ACP, editable), rest, departure, buffer with status (US6).
+   control window (ACP, editable), rest, departure, buffer with status (US6); its column headers stay at the top of
+   the plan column while the timetable scrolls.
 3. **Map pane (right, fixed)** – CyclOSM map with the track and checkpoint markers filling the remaining space, the
    route overlay selection and legend (US7) in its top right corner; elevation profile with the segment strip docked
    below it.

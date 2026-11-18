@@ -53,6 +53,29 @@ test.describe('Planner layout', () => {
     expect(await map.boundingBox()).toEqual(mapBefore);
   });
 
+  test('the column headers of the timetable stay at the top while the timetable scrolls', async ({ page }) => {
+    const sidebar = page.getByTestId('planner-sidebar');
+    const header = page.locator('.checkpoint-table thead th').first(); // (the cells stick, not the <thead> box)
+    await sidebar.evaluate((el) => el.scrollTo(0, 0)); // (adding the checkpoints scrolled to the form below the table)
+    const headerBefore = (await header.boundingBox())!;
+    const top = (await sidebar.boundingBox())!.y;
+    expect(headerBefore.y).toBeGreaterThan(top); // below the title, settings and totals at first
+
+    // scrolled to the middle of the timetable: the headers sit at the top edge of the plan column, above the rows
+    await sidebar.evaluate((el, by) => el.scrollTo(0, by), headerBefore.y - top + 300);
+    await expect.poll(async () => (await header.boundingBox())!.y).toBeCloseTo(top, 0);
+    const headerBox = (await header.boundingBox())!;
+    const hit = await page.evaluate(
+      ({ x, y }) => document.elementFromPoint(x, y)?.closest('thead') !== null,
+      { x: headerBox.x + 20, y: headerBox.y + headerBox.height / 2 },
+    );
+    expect(hit).toBe(true); // opaque and on top – the rows scroll underneath
+
+    // scrolled back: the headers return to their place in the table
+    await sidebar.evaluate((el) => el.scrollTo(0, 0));
+    await expect.poll(async () => (await header.boundingBox())!.y).toBeCloseTo(headerBefore.y, 0);
+  });
+
   test('clicking a marker scrolls its checkpoint into view', async ({ page }) => {
     const sidebar = page.getByTestId('planner-sidebar');
     await sidebar.evaluate((el) => el.scrollTo(0, 0));

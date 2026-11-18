@@ -482,6 +482,21 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
   position: relative;
 }
 
+// The timetable's column headers stick to the top of the scrolling plan column. Its wrapper clips instead of
+// scrolling (Bootstrap: `overflow-x: auto`) – a scroll container in between would keep the headers from sticking; the
+// table fits the column anyway (columns stack or hide by width, see the container queries).
+.checkpoint-panel .table-responsive {
+  overflow-x: clip;
+}
+
+.checkpoint-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2; // above the inputs and badges of the rows
+  background-color: var(--bs-table-bg);
+  box-shadow: inset 0 -1px 0 $line; // the border scrolls away with the collapsed table borders – drawn here instead
+}
+
 // ---- Start time and status (US6) ----
 
 .plan-settings {
