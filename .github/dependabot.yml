@@ -1,0 +1,39 @@
+# Dependabot version updates: a pull request for each new version of a dependency (docs/design.md → Dependency
+# updates). Every package ecosystem used in the repository gets an entry here – add one when a new language, package
+# manager or tool with its own manifest is introduced.
+version: 2
+
+updates:
+  # Node / npm: package.json and package-lock.json (app, build and test tooling)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: build
+      include: scope # → "build(deps): …", "build(deps-dev): …"
+    # minor and patch updates in one PR per dependency type, major updates one PR each (they may need code changes)
+    groups:
+      npm-production:
+        dependency-type: production
+        update-types: [minor, patch]
+      npm-development:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  # GitHub Actions used in .github/workflows – pinned to commit SHAs with the version as a comment; Dependabot updates
+  # both the SHA and the comment
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: ci
+      include: scope # → "ci(deps): …"
+    groups:
+      github-actions:
+        update-types: [minor, patch]

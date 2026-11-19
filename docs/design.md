@@ -71,6 +71,19 @@ verify them. Iterations and architecture: [plan.md](plan.md).
 - Application should be deployed as a GitHub page
 - Create GitHub workflows to build and test the application and to deploy it as a GitHub page
 
+### Dependency updates
+
+- Dependabot keeps all dependencies up to date: it opens a pull request for each new version, and the CI workflow
+  tests it before it is merged ([`.github/dependabot.yml`](../.github/dependabot.yml))
+- Every package ecosystem in the repository is configured in Dependabot – currently npm (Node dependencies) and
+  GitHub Actions. **When a new language, package manager or tool with its own manifest is added** (e.g. a backend in
+  another language, Docker images), an entry for its ecosystem is added to `.github/dependabot.yml` in the same change
+- Updates are checked weekly; minor and patch updates are grouped into one pull request per ecosystem (npm: per
+  production / development dependencies), major updates get a pull request each
+- GitHub Actions are pinned to a full commit SHA, with the version as a comment
+  (`uses: actions/checkout@<sha> # v7.0.1`) – a moved or compromised tag can't change what runs; Dependabot updates the
+  SHA and the comment together. New workflow steps follow the same rule
+
 ## Testing
 
 - All features should be testable with browser tests and unit tests
